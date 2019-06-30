@@ -11,6 +11,45 @@ import copy
 from Bio.PDB.MMCIF2Dict import MMCIF2Dict
 
 
+def pdb_to_masterlist(filelist):
+    """
+    pdb_to_masterlist
+    """
+    master_molID_class_list = []
+    N=0
+    for my_files in filelist:
+        N += 1
+        print("Reading:"+' '+my_files+"  ("+str(N)+" of "+str(len(filelist))+")")
+        with open(my_files) as myfile:
+            this_molID_class = make_MolID_cif(myfile)
+            master_molID_class_list.append(this_molID_class)
+    return master_molID_class_list
+
+def uniquelist_to_conversionlist(unique_map):
+    """
+    uniquelist_to_conversionlist
+    """
+    molIDConversion_list = []
+    for key in unique_map:
+        molIDConversion_list.append(initial_MolIDConversion(key, unique_map[key]))
+    return molIDConversion_list
+
+def update_masterlist(master_molID_class_list, molIDConversion_list):
+    """
+    update_masterlist
+    """
+    molIDConvert_molID_chID_map = {}
+    for molIDConversion in molIDConversion_list:
+        molIDConvert_molID_chID_map[molIDConversion.molID] = molIDConversion.chID_list
+    # Update master_molID_class_list
+    for molID_class in master_molID_class_list:
+        for molID in molID_class.molID_chID:
+            molID_class.add_chID_newchID_map(molID, molIDConvert_molID_chID_map[molID])
+    # Determine which MolID objects now contain conflicts (concatenations)
+    for molID_class in master_molID_class_list:
+        molID_class.check_for_concatenations()
+    return master_molID_class_list
+
 # The class containing all the information about each file neccessary to build
 # a conversion template
 class MolID(object):
@@ -279,3 +318,143 @@ def read_input_file(input_cnv_file):
         return user_molID_chID_map
 # End Read user input file function
 
+
+####################################
+# INTERACTIVE CONVERSION FUNCTIONS #
+####################################
+
+def show_full_conversion(current_list, step='conversion'):
+    """
+    show_full_conversion
+    """
+    if(step=='conversion'):
+        for molIDConversion in current_list:
+            molIDCon_chID_list_forPrint = re.sub('\[|\]| |\'', '', str(molIDConversion.chID_list))
+            print(molIDConversion.molID+":"+molIDCon_chID_list_forPrint)
+    elif(step=='concatenation'):
+        for molID_class in current_list:
+            for molID in molID_class.molID_chID:
+                for chID in molID_class.molID_chID[molID]:
+                    if chID in molID_class.concat_order:
+                        print(molID_class.file_name + ":" + molID + ":"
+                              + chID + ":" +
+                              molID_class.chID_newchID_map[chID] + ":"
+                              + str(molID_class.concat_order[chID]))
+                    else:
+                        print(molID_class.file_name + ":" + molID + ":"
+                              + chID + ":" +
+                              molID_class.chID_newchID_map[chID] + ":" +
+                              str(0))
+
+def show_unassigned_conversion(current_list, step='conversion'):
+    """
+    show_unassigned_conversion
+    """
+    if(step=='conversion'):
+        for molIDConversion in current_list:
+            molIDConversion.check_for_completeness()
+            if molIDConversion.complete is False:
+                molIDCon_chID_list_forPrint = re.sub('\[|\]| |\'', '', str(molIDConversion.chID_list))
+                print(str(molIDConversion.occur)+":"+str(molIDConversion.molID)+":"+molIDCon_chID_list_forPrint)
+    elif(step=='concatenation'):
+        for molID_class in current_list:
+            for molID in molID_class.molID_chID:
+                for chID in molID_class.molID_chID[molID]:
+                    if molID_class.complete_order[chID] is False:
+                        print(molID_class.file_name + ":" + molID + ":"
+                              + chID + ":" +
+                              molID_class.chID_newchID_map[chID] + ":"
+                              + str(molID_class.concat_order[chID]))
+
+def add_user_conversion(user_molID_chID_map, molIDConversion_list):
+    """
+    add_user_conversion:
+    Add contents of user's input file to your MolIDConversion class and check for completeness
+    """
+    for molIDConversion in molIDConversion_list:
+        # This is currently strict inclusion but perhaps should be except out
+        # of convenience to the user
+        for key in user_molID_chID_map:
+            if (str(key)==str(molIDConversion.molID)):
+                molIDConversion.add_chID_list(user_molID_chID_map[key])
+        molIDConversion.check_for_completeness()
+    # !! molIDConversion_list has been updated
+    return molIDConversion_list
+
+def search_conversion(molIDConversion_list, search_term):
+    """
+    search_conversion
+    """
+    search_molIDConversion_list = []
+    for molIDConversion in molIDConversion_list:
+        if search_term in molIDConversion.molID:
+            search_molIDConversion_list.append(molIDConversion)
+            molIDCon_chID_list_forPrint = re.sub('\[|\]| |\'', '', str(molIDConversion.chID_list))
+            print(molIDConversion.molID+":"+molIDCon_chID_list_forPrint)
+    for molIDConversion in search_molIDConversion_list:
+        molIDConversion_list.remove(molIDConversion)
+    return molIDConversion_list, search_molIDConversion_list
+
+def search_again_conversion(molIDConversion_list, search_molIDConversion_list, search_term):
+    """
+    search_again_conversion
+    """
+    new_search_molIDConversion_list = []
+    for molIDConversion in search_molIDConversion_list:
+        # If search term is found on search_molIDConversion_list
+        # then add to new temporary list, if not, add back to
+        # molIDConversion_list
+        if search_term in molIDConversion.molID:
+            new_search_molIDConversion_list.append(molIDConversion)
+            molIDCon_chID_list_forPrint = re.sub('\[|\]| |\'', '', str(molIDConversion.chID_list))
+            print(molIDConversion.molID+":"+molIDCon_chID_list_forPrint)
+        else:
+            molIDConversion_list.append(molIDConversion)
+    search_molIDConversion_list = new_search_molIDConversion_list
+    return molIDConversion_list, search_molIDConversion_list
+
+def edit_chain_conversion(molIDConversion_list,search_molIDConversion_list, chID_list, action='add'):
+    """
+    edit_chain_conversion
+    """
+    chID_list = chID_list.split(',')
+    # Performing chain addition to searched terms
+    for molIDConversion in search_molIDConversion_list:
+        if(action=='add'):
+            molIDConversion.add_chID_list(chID_list)
+        elif(action=='remove'):
+            molIDConversion.remove_chID_list(chID_list)
+    # Adding modified molIDConversions back to molIDConversion_list
+    for molIDConversion in search_molIDConversion_list:
+        molIDConversion.check_for_completeness()
+        molIDConversion_list.append(molIDConversion)
+    return molIDConversion_list, search_molIDConversion_list
+
+def check_complete(molIDConversion_list):
+    """
+    check_complete
+    """
+    num_unassigned = 0
+    for molIDConversion in molIDConversion_list:
+        if molIDConversion.complete is False:
+            num_unassigned += 1
+    if (num_unassigned > 0):
+        input_menu_complete = "0"
+    else:
+        input_menu_complete = "1"
+    return input_menu_complete
+
+#######################################
+# INTERACTIVE CONCATENATION FUNCTIONS #
+#######################################
+
+def problem_counter(master_molID_class_list):
+    """
+    problem_counter
+    """
+    count_problems = 0
+    for molID_class in master_molID_class_list:
+        for chID in molID_class.complete_order:
+            if molID_class.complete_order[chID] is False:
+                count_problems += 1
+    return count_problems

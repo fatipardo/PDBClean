@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
+#
+# Comments from Nicholas Corsepius:
+## ! ! ! master_molID_class_list is very important
+# This is the list that contains every file's MolID class
+# !! molIDConversion_list is important . . . it contains the objects
+# MolIDConversion and is what is going to be updated by the user and evaulated
+# to determine when the next step in the program is unlocked
+# Create list of MolIDConversion objects using unique_molID_occur_map
 
 from __future__ import print_function
 import os, sys
@@ -7,10 +15,14 @@ import re
 import numpy as np
 import csv
 import copy
+import glob
 from Bio.PDB.MMCIF2Dict import MMCIF2Dict
-sys.path.append('../src/')
-import pdbcleanmolidcifutils
+from PDBClean import pdbcleanmolidcifutils as molidutils
 
+
+########################
+# READ INPUT ARGUMENTS #
+########################
 n_arg = len(sys.argv)
 if(n_arg<3):
     print('Usage error: {0} <source directory> <target directory>'.format(sys.argv[0]))
@@ -18,38 +30,22 @@ if(n_arg<3):
 source_dir=sys.argv[1]
 target_dir=sys.argv[2]
 
-# ! ! ! master_molID_class_list is very important
-# This is the list that contains every file's MolID class
-master_molID_class_list = []
-N = 0
+
+#########################################
+# READ PDB FILES AND DEFINE MolID LISTS #
+#########################################
+
 filelist=glob.glob(source_dir+'/*.cif')
-for my_files in filelist:
-    N += 1
-    print("Reading:" + ' ' + my_files + "  (" + str(N) + " of " + str(len(filelist)) + ")")
-    with open(my_files) as myfile:
-        this_molID_class = make_MolID_cif(myfile)
-        master_molID_class_list.append(this_molID_class)
-# End reading pdb files
-
-unique_molID_occur_map = CreateMasterUniqueMolIDMap(master_molID_class_list)
-# !! molIDConversion_list is important . . . it contains the objects
-# MolIDConversion and is what is going to be updated by the user and evaulated
-# to determine when the next step in the program is unlocked
-# Create list of MolIDConversion objects using unique_molID_occur_map
-molIDConversion_list = []
-for key in unique_molID_occur_map:
-    molIDConversion_list.append(initial_MolIDConversion(key,
-                                unique_molID_occur_map[key]))
+master_molID_class_list = molidutils.pdb_to_masterlist(filelist)
+unique_molID_occur_map  = molidutils.CreateMasterUniqueMolIDMap(master_molID_class_list)
+molIDConversion_list    = molidutils.uniquelist_to_conversionlist(unique_molID_occur_map)
 
 
-# Begin Interactive Portion of Program
-#
-#
-#
-# INTERACTIVE MOLID CONVERSION MENU
-#
-# Now we are entering the interactive menu with which the user will complete
-# their molID conversion templates by ensuring that each member of
+#####################################
+# INTERACTIVE MOLID CONVERSION MENU #
+#####################################
+# Goal: 
+# users complete their molID conversion templates by ensuring that each member of
 # molIDConversion_list has status complete = True
 input_menu = ""
 input_menu_complete = ""
@@ -74,101 +70,38 @@ while(input_menu != "QUIT"):
         print("    7) Continue to next step of curation")
 
     input_menu = input('Option Number: ')
-    # Option 1) Show full conversion
     if (input_menu == "1"):
-        for molIDConversion in molIDConversion_list:
-            molIDCon_chID_list_forPrint = re.sub('\[|\]| |\'', '', str(molIDConversion.chID_list))
-            print(molIDConversion.molID+":"+molIDCon_chID_list_forPrint)
-    # END Option 1) Show full conversion
-
-    # Option 2) Show only unassigned conversions
+        molidutils.show_full_conversion(molIDConversion_list)
     elif (input_menu == "2"):
-        for molIDConversion in molIDConversion_list:
-            molIDConversion.check_for_completeness()
-            if molIDConversion.complete is False:
-                molIDCon_chID_list_forPrint = re.sub('\[|\]| |\'', '', str(molIDConversion.chID_list))
-                print(str(molIDConversion.occur)+":"+str(molIDConversion.molID)+":"+molIDCon_chID_list_forPrint)
-    # END Option 2) Show only unassigned conversions
-
-    # Option 3) Enter input file
+        molidutils.show_unassigned_conversion(molIDConversion_list)
     elif (input_menu == "3"):
         input_cnv_file = input('Conversion File: ')
-        #
-        #
-        # ! Performing read user input file for initial input
-        #
-        user_molID_chID_map = read_input_file(input_cnv_file)
-
-        # Add contents of user's input file to your MolIDConversion class and check
-        # for completeness
-        for molIDConversion in molIDConversion_list:
-            # This is currently strict inclusion but perhaps should be except out
-            # of convenience to the user
-            for key in user_molID_chID_map:
-                if (str(key)==str(molIDConversion.molID)):
-                    molIDConversion.add_chID_list(user_molID_chID_map[key])
-            molIDConversion.check_for_completeness()
-        # !! molIDConversion_list has been updated
-    # END Option 3) Enter input file
-
-    # Option 4) Search MolID to add chain ID conversion has a lot of moving
-    # parts due to the level of interaction necessary
+        user_molID_chID_map =  molidutils.read_input_file(input_cnv_file)
+        molIDConversion_list = molidutils.add_user_conversion(user_molID_chID_map, molIDConversion_list)
     elif (input_menu == "4"):
-
-        input_submenu_4_1 = 0
         search_term = input('MolID search term: ')
-        search_molIDConversion_list = []
-        for molIDConversion in molIDConversion_list:
-            if search_term in molIDConversion.molID:
-                search_molIDConversion_list.append(molIDConversion)
-                molIDCon_chID_list_forPrint = re.sub('\[|\]| |\'', '', str(molIDConversion.chID_list))
-                print(molIDConversion.molID+":"+molIDCon_chID_list_forPrint)
-        for molIDConversion in search_molIDConversion_list:
-            molIDConversion_list.remove(molIDConversion)
-
+        molIDConversion_list, search_molIDConversion_list = molidutils.search_conversion(molIDConversion_list, search_term)
+        input_submenu_4_1 = 0
         while (input_submenu_4_1 != "DONE"):
             print("    1) Further narrow down search results")
             print("    2) Add chain ID to conversion templates")
             input_submenu_4_1 = input('Option Number: ')
             if (input_submenu_4_1 == "QUIT"):
                 input_submenu_4_1 = "DONE"
-            #
-            # input submenu
             if (input_submenu_4_1 == "1"):
                 search_term = input('MolID search term: ')
-                new_search_molIDConversion_list = []
-                for molIDConversion in search_molIDConversion_list:
-
-                    # If search term is found on search_molIDConversion_list
-                    # then add to new temporary list, if not, add back to
-                    # molIDConversion_list
-                    if search_term in molIDConversion.molID:
-                        new_search_molIDConversion_list.append(molIDConversion)
-                        molIDCon_chID_list_forPrint = re.sub('\[|\]| |\'', '', str(molIDConversion.chID_list))
-                        print(molIDConversion.molID+":"+molIDCon_chID_list_forPrint)
-                    else:
-                        molIDConversion_list.append(molIDConversion)
-                search_molIDConversion_list = new_search_molIDConversion_list
+                molIDConversion_list, search_molIDConversion_list = molidutils.search_again_conversion(molIDConversion_list, search_molIDConversion_list, search_term)
             elif (input_submenu_4_1 == "2"):
                 print("""Enter new chain IDs, comma separated, no spaces""")
                 chID_list = input('Chain IDs: ')
                 if (chID_list == "") or (chID_list == "QUIT"):
                     pass
                 else:
-                    chID_list = chID_list.split(',')
-                    # Performing chain addition to searched terms
-                    for molIDConversion in search_molIDConversion_list:
-                        molIDConversion.add_chID_list(chID_list)
-
-                # Adding modified molIDConversions back to molIDConversion_list
-                for molIDConversion in search_molIDConversion_list:
-                    molIDConversion.check_for_completeness()
-                    molIDConversion_list.append(molIDConversion)
-                # Get out of Option 4)
+                    molIDConversion_list, search_molIDConversion_list = molidutils.edit_chain_conversion(molIDConversion_list, 
+                                                                                                         search_molIDConversion_list, 
+                                                                                                         chID_list,
+                                                                                                         action='add')
                 input_submenu_4_1 = "DONE"
-    # END Option 4) Search MolID to add chain ID conversion
-
-    # Option 5) Go entry by entry to add chain ID conversion
     elif (input_menu == "5"):
         print("Enter chain IDs for each of the following MolID.")
         print("Comma separated, no spaces")
@@ -180,81 +113,40 @@ while(input_menu != "QUIT"):
                 chID_list = chID_list.split(',')
             molIDConversion.add_chID_list(chID_list)
             molIDConversion.check_for_completeness()
-    # End Option 5) Go entry by entry to add chain ID conversion
-
-    # Option 6) Remove a chain ID conversion
     elif (input_menu == "6"):
-        input_submenu_6_1 = 0
         search_term = input('MolID search term: ')
-        search_molIDConversion_list = []
-        for molIDConversion in molIDConversion_list:
-            if search_term in molIDConversion.molID:
-                search_molIDConversion_list.append(molIDConversion)
-                molIDCon_chID_list_forPrint = re.sub('\[|\]| |\'', '', str(molIDConversion.chID_list))
-                print(molIDConversion.molID+":"+molIDCon_chID_list_forPrint)
-        for molIDConversion in search_molIDConversion_list:
-            molIDConversion_list.remove(molIDConversion)
-
+        molIDConversion_list, search_molIDConversion_list = molidutils.search_conversion(molIDConversion_list, search_term)
+        input_submenu_6_1 = 0
         while (input_submenu_6_1 != "DONE"):
             print("    1) Further narrow down search results")
             print("    2) Remove chain ID from conversion templates")
             input_submenu_6_1 = input('Option Number: ')
-            #
-            # input submenu
             if (input_submenu_6_1 == "1"):
                 search_term = input('MolID search term: ')
-                new_search_molIDConversion_list = []
-                for molIDConversion in search_molIDConversion_list:
-
-                    # If search term is found on search_molIDConversion_list
-                    # then add to new temporary list, if not, add back to
-                    # molIDConversion_list
-                    if search_term in molIDConversion.molID:
-                        new_search_molIDConversion_list.append(molIDConversion)
-                        molIDCon_chID_list_forPrint = re.sub('\[|\]| |\'', '', str(molIDConversion.chID_list))
-                        print(molIDConversion.molID+":"+molIDCon_chID_list_forPrint)
-                    else:
-                        molIDConversion_list.append(molIDConversion)
-                search_molIDConversion_list = new_search_molIDConversion_list
+                molIDConversion_list, search_molIDConversion_list = molidutils.search_again_conversion(molIDConversion_list, search_molIDConversion_list, search_term)
             elif (input_submenu_6_1 == "2"):
                 print("""Enter chain ID to be removed, comma separated, no spaces""")
                 chID_list = input('Chain IDs: ')
                 if (chID_list == "") or (chID_list == "QUIT"):
                     pass
                 else:
-                    chID_list = chID_list.split(',')
-                    # Performing chain addition to searched terms
-                    for molIDConversion in search_molIDConversion_list:
-                        molIDConversion.remove_chID_list(chID_list)
-
-                # Adding modified molIDConversions back to molIDConversion_list
-                for molIDConversion in search_molIDConversion_list:
-                    molIDConversion.check_for_completeness()
-                    molIDConversion_list.append(molIDConversion)
-                # Get out of Option 6
+                    molIDConversion_list, search_molIDConversion_list = molidutils.edit_chain_conversion(molIDConversion_list, 
+                                                                                                         search_molIDConversion_list, 
+                                                                                                         chID_list,
+                                                                                                         action='remove')
                 input_submenu_6_1 = "DONE"
-    # End Option 6
-
-    # Option 7) Continue to next step of curation
     elif (input_menu == "7"):
         if (input_menu_complete == "1"):
             input_menu = "QUIT"
             concat_menu = "START"
-    # END Option 7) Continue to next step of curation
+    #
+    input_menu_complete = molidutils.check_complete(molIDConversion_list)
 
-    num_unassigned = 0
-    for molIDConversion in molIDConversion_list:
-        if molIDConversion.complete is False:
-            num_unassigned += 1
-    if (num_unassigned > 0):
-        input_menu_complete = "0"
-    else:
-        input_menu_complete = "1"
+########################################
+# INTERACTIVE MOLID CONCATENATION MENU #
+########################################
+# Goal: 
 
-#
-#
-#
-# Concatenation portion of program
 if (concat_menu == "START"):
     # Prepare for concatenation step
     # We now have to take the information contained in the MolIDConversion objects
@@ -263,83 +155,39 @@ if (concat_menu == "START"):
     # contain concatenated chains. These will be presented to the user in another
     # interactive menu section where they can update the planned conversion on
     # a file by file basis
+    
+    master_molID_class_list = molidutils.update_masterlist(master_molID_class_list, molIDConversion_list)
 
-    molIDConvert_molID_chID_map = {}
-    for molIDConversion in molIDConversion_list:
-        molIDConvert_molID_chID_map[molIDConversion.molID] = molIDConversion.chID_list
+    concat_menu = ""
+    concat_menu_complete = ""
 
-    # Update master_molID_class_list
-    for molID_class in master_molID_class_list:
-        for molID in molID_class.molID_chID:
-            molID_class.add_chID_newchID_map(molID, molIDConvert_molID_chID_map[molID])
-    # Determine which MolID objects now contain conflicts (concatenations)
-    for molID_class in master_molID_class_list:
-        molID_class.check_for_concatenations()
-
-        concat_menu = ""
-        concat_menu_complete = ""
-
-#
-#
-#
-# Interactive concatenation menu portion of the program
-#
     while(concat_menu != "QUIT"):
 
-        count_problems = 0
-        for molID_class in master_molID_class_list:
-            for chID in molID_class.complete_order:
-                if molID_class.complete_order[chID] is False:
-                    count_problems += 1
+        count_problems = molidutils.problem_counter(master_molID_class_list)
         if (count_problems == 0):
             concat_menu_complete = "1"
 
-        # Need a little more information here to help user
         if (concat_menu_complete == "1"):
             print("""Congratulations! You have successfully constructed your
-conversion templates.You can proceed to the next section by selection option
-7 or, continue to edit your conversion template through this menu""")
+                     conversion templates.You can proceed to the next section by selection option
+                     7 or, continue to edit your conversion template through this menu""")
         print("""PDBClean Concatenations Menu
-Note: All proposed concatenations must be accepted before the curation can
-be completed.
-    Select one of the following options to proceed:
-    1) Show all conversions
-    2) Show only unaccepted concatenations
-    3) Search and modify destination chainIDs of proposed concatenations
-    4) Search and modify order of proposed concatenations
-    5) Search and accept proposed concatenations""")
+                 Note: All proposed concatenations must be accepted before the curation can
+                 be completed.
+                 Select one of the following options to proceed:
+                 1) Show all conversions
+                 2) Show only unaccepted concatenations
+                 3) Search and modify destination chainIDs of proposed concatenations
+                 4) Search and modify order of proposed concatenations
+                 5) Search and accept proposed concatenations""")
         if (concat_menu_complete == "1"):
             print("    6) Finalize Curation")
         concat_menu = input('Option Number: ')
 
-        # Option 1) Show full conversion
         if (concat_menu == "1"):
-            for molID_class in master_molID_class_list:
-                for molID in molID_class.molID_chID:
-                    for chID in molID_class.molID_chID[molID]:
-                        if chID in molID_class.concat_order:
-                            print(molID_class.file_name + ":" + molID + ":"
-                                  + chID + ":" +
-                                  molID_class.chID_newchID_map[chID] + ":"
-                                  + str(molID_class.concat_order[chID]))
-                        else:
-                            print(molID_class.file_name + ":" + molID + ":"
-                                  + chID + ":" +
-                                  molID_class.chID_newchID_map[chID] + ":" +
-                                  str(0))
-        # END Option 1) Show full conversion
-
-        # Option 2) Show only unassigned conversions
+            molidutils.show_full_conversion(master_molID_class_list, step='concatenation')
         elif (concat_menu == "2"):
-            for molID_class in master_molID_class_list:
-                for molID in molID_class.molID_chID:
-                    for chID in molID_class.molID_chID[molID]:
-                        if molID_class.complete_order[chID] is False:
-                            print(molID_class.file_name + ":" + molID + ":"
-                                  + chID + ":" +
-                                  molID_class.chID_newchID_map[chID] + ":"
-                                  + str(molID_class.concat_order[chID]))
-        # END Option 2) Show only unassigned conversions
+            molidutils.show_unassigned_conversion(master_molID_class_list, step='concatenation')
 
         # Option 3) Search and modify destination chainIDs of proposed concatenations
         elif (concat_menu == "3"):
