@@ -458,3 +458,106 @@ def problem_counter(master_molID_class_list):
             if molID_class.complete_order[chID] is False:
                 count_problems += 1
     return count_problems
+
+def get_search_term(value):
+    """
+    get_search_term
+    """
+    search_ok = ""
+    while (search_ok != "OK"):
+        print("Search format - File:MolID:OldChain:NewChain:ConcatOrder")
+        search_term = input('Search ')
+        if search_term == "QUIT":
+            search_ok = "OK"
+            value = "QUIT"
+        search_term = search_term.split(":")
+        if (len(search_term) > 4):
+            search_ok = "OK"
+    return search_term, value
+
+def search_chains(master_molID_class_list, search_term):
+    """
+    search_chains
+    """
+    search_term_file = search_term[0]
+    search_term_molID = search_term[1]
+    search_term_oldchID = str(search_term[2])
+    search_term_newchID = str(search_term[3])
+    search_term_concatorder = search_term[4]
+
+    found_molID_class_chID_map = {}
+    molID_class_been_copied = {}
+    # Perform search
+    # Hits to the search have to be copied using deepcopy which will
+    # create a distinct object that is an exact copy of another object
+    # Modifications will be made to the copy to make sure they do not
+    # introduce new errors
+    for molID_class in master_molID_class_list:
+        if (search_term_file in molID_class.file_name) or (search_term_file == ""):
+            for molID in molID_class.molID_chID:
+                if (search_term_molID in molID) or (search_term_molID == ""):
+                    for chID in molID_class.molID_chID[molID]:
+                        if (search_term_oldchID == chID) or (search_term_oldchID == ""):
+                            newchID = molID_class.chID_newchID_map[chID]
+                            if (search_term_newchID == newchID) or (search_term_newchID == ""):
+                                if chID in molID_class.concat_order:
+                                    this_concatord = molID_class.concat_order[chID]
+                                else:
+                                    this_concatord = 0
+                                if (search_term_concatorder == str(this_concatord)) or (search_term_concatorder == ""):
+                                    print(molID_class.file_name + ":" + molID + ":"
+                                          + chID + ":" +
+                                          molID_class.chID_newchID_map[chID] + ":"
+                                          + str(this_concatord))
+                                    if molID_class in molID_class_been_copied:
+                                        found_molID_class_chID_map[molID_class_been_copied[molID_class]].append(chID)
+                                    else:
+                                        test_molID_class = copy.deepcopy(molID_class)
+                                        molID_class_been_copied[molID_class] = test_molID_class
+                                        found_molID_class_chID_map[test_molID_class] = [chID]
+    return found_molID_class_chID_map, molID_class_been_copied
+
+def edit_chain_order(found_map, newchID, action='try'):
+    """
+    edit_chain_order
+    """
+     for molID_class in found_map:
+        for chID in found_map[molID_class]:
+            if(action=='try'):
+                molID_class.chID_newchID_map[chID] = newchID
+                #HAVE TO FORCE EXISTING CONCATENATIONS BACK TO OK
+                molID_class.check_for_concatenations()
+            elif(action=='update'):
+                molID_class.update_concat_order(chID, newchID)
+            elif(action=='accept'):
+                molID_class.force_complete_order(chID, True)
+    return found_map
+
+def print_conflicts(found_map):
+    """
+    print_conflicts
+    """
+    print("Updating this new chain ID will lead to the following conflicting assingments")
+    was_printed = {}
+    for molID_class in found_molID_class_chID_map:
+        for molID in molID_class.molID_chID:
+            for chID in molID_class.molID_chID[molID]:
+                if molID_class.complete_order[chID] is False:
+                    if chID not in was_printed:
+                        was_printed[chID] = 1
+                        print(molID_class.file_name + ":" + molID + ":" + chID + ":" + molID_class.chID_newchID_map[chID] + ":" + str(molID_class.concat_order[chID]))
+                        
+def accept_newchain(masterlist, found_map):                        
+    """
+    accept_newchain
+    """
+    usage = {}
+    for updated_molID_class in found_map:
+        for molID_class in masterlist:
+            if (molID_class.file_name == updated_molID_class.file_name):
+                if updated_molID_class not in usage:
+                    usage[updated_molID_class] = 1
+                    masterlist.remove(molID_class)
+                    masterlist.append(updated_molID_class)
+
+
