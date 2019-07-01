@@ -11,6 +11,10 @@ import copy
 from Bio.PDB.MMCIF2Dict import MMCIF2Dict
 
 
+####################
+# INITIALIZE STEPS #
+####################
+
 def pdb_to_masterlist(filelist):
     """
     pdb_to_masterlist
@@ -366,11 +370,13 @@ def show_unassigned_conversion(current_list, step='conversion'):
                               molID_class.chID_newchID_map[chID] + ":"
                               + str(molID_class.concat_order[chID]))
 
-def add_user_conversion(user_molID_chID_map, molIDConversion_list):
+def add_user_conversion(molIDConversion_list):
     """
     add_user_conversion:
     Add contents of user's input file to your MolIDConversion class and check for completeness
     """
+    input_cnv_file = input('Conversion File: ')
+    user_molID_chID_map =  read_input_file(input_cnv_file)
     for molIDConversion in molIDConversion_list:
         # This is currently strict inclusion but perhaps should be except out
         # of convenience to the user
@@ -379,6 +385,38 @@ def add_user_conversion(user_molID_chID_map, molIDConversion_list):
                 molIDConversion.add_chID_list(user_molID_chID_map[key])
         molIDConversion.check_for_completeness()
     # !! molIDConversion_list has been updated
+    return molIDConversion_list
+
+def edit_conversion_interface(moldIDConversion_list, action='add'):
+    """
+    edit_conversion_interface
+    """
+    search_term = input('MolID search term: ')
+    molIDConversion_list, search_molIDConversion_list = molidutils.search_conversion(molIDConversion_list, search_term)
+    input_submenu = 0
+    while (input_submenu != "DONE"):
+        print("    1) Further narrow down search results")
+        if(action=='add'):
+            print("    2) Add chain ID to conversion templates")
+        elif(action=='remove'):
+            print("    2) Remove chain ID from conversion templates")
+        input_submenu = input('Option Number: ')
+        if (input_submenu == "QUIT"):
+            input_submenu = "DONE"
+        if (input_submenu == "1"):
+            search_term = input('MolID search term: ')
+            molIDConversion_list, search_molIDConversion_list = molidutils.search_again_conversion(molIDConversion_list, search_molIDConversion_list, search_term)
+        elif (input_submenu == "2"):
+            if(action=='add'):  
+                print("""Enter new chain IDs, comma separated, no spaces""")
+            elif(action=='remove'):
+                print("""Enter chain ID to be removed, comma separated, no spaces""")
+            chID_list = input('Chain IDs: ')
+            if (chID_list == "") or (chID_list == "QUIT"):
+                pass
+            else:
+                molIDConversion_list, search_molIDConversion_list = molidutils.edit_chain_conversion(molIDConversion_list, search_molIDConversion_list, chID_list, action=action)
+            input_submenu = "DONE"
     return molIDConversion_list
 
 def search_conversion(molIDConversion_list, search_term):
@@ -430,6 +468,22 @@ def edit_chain_conversion(molIDConversion_list,search_molIDConversion_list, chID
         molIDConversion_list.append(molIDConversion)
     return molIDConversion_list, search_molIDConversion_list
 
+def edit_conversion_manual(molIDConversion_list):
+    """
+    edit_conversion_manual
+    """
+    print("Enter chain IDs for each of the following MolID.")
+    print("Comma separated, no spaces")
+    for molIDConversion in molIDConversion_list:
+        chID_list = input(molIDConversion.molID+":")
+        if (chID_list == "") or (chID_list == "QUIT"):
+            pass
+        else:
+            chID_list = chID_list.split(',')
+        molIDConversion.add_chID_list(chID_list)
+        molIDConversion.check_for_completeness()
+    return molIDConversion_list
+
 def check_complete(molIDConversion_list):
     """
     check_complete
@@ -458,6 +512,54 @@ def problem_counter(master_molID_class_list):
             if molID_class.complete_order[chID] is False:
                 count_problems += 1
     return count_problems
+
+def edit_concatenation_interface(master_molID_class_list, new_order=None, action='accept'):
+    """
+    edit_concatenation_interface
+    """
+    concat_submenu = 0
+    while(concat_submenu != "QUIT"):
+        search_term, concat_submenu = get_search_term(concat_submenu)
+        if concat_submenu != "QUIT":
+            found_molID_class_chID_map, molID_class_been_copied = search_chains(master_molID_class_list, search_term)
+        while (concat_submenu != "QUIT"):
+            if(action=='try'):
+                print("""Select one of the following options to proceed:
+                         1) Perform new search
+                         2) Update new chain ID
+                      """)
+            elif(action=='update'):
+                print("""Select one of the following options to proceed:
+                         1) Perform new search
+                         2) Update concatenation order
+                      """)
+            elif(action=='accept'):
+                print("""Select one of the following options to proceed:
+                         1) Perform new search
+                         2) Accept planned concatenation
+                      """)
+            concat_submenu = input('Option Number: ')
+            if (concat_submenu == "1"):
+                break
+            elif (concat_submenu == "2"):
+                if(action=='try'):
+                    new_order = input('New Chain ID: ')
+                elif(action=='update'):
+                    new_order = input('New concatenation order: ')
+                found_molID_class_chID_map = edit_chain_order(found_molID_class_chID_map, new_order, action=action)
+                if(action=='try'):
+                    print_conflicts(found_molID_class_chID_map)
+                    print("Would you like to accept or deny these changes?")
+                    while (concat_submenu != "QUIT"):
+                        concat_submenu = input('Enter ACCEPT or DENY: ')
+                        if (concat_submenu == "ACCEPT"):
+                            master_molID_class_list = accept_newchain(master_molID_class_list, found_molID_class_chID_map)
+                        concat_submenu = "QUIT"
+                        concat_menu = ""
+                else:
+                    master_molID_class_list = accept_newchain(master_molID_class_list, found_molID_class_chID_map)
+                    concat_submenu = "QUIT"
+    return master_molID_class_list, new_order
 
 def get_search_term(value):
     """
@@ -521,7 +623,7 @@ def edit_chain_order(found_map, newchID, action='try'):
     """
     edit_chain_order
     """
-     for molID_class in found_map:
+    for molID_class in found_map:
         for chID in found_map[molID_class]:
             if(action=='try'):
                 molID_class.chID_newchID_map[chID] = newchID
@@ -559,5 +661,48 @@ def accept_newchain(masterlist, found_map):
                     usage[updated_molID_class] = 1
                     masterlist.remove(molID_class)
                     masterlist.append(updated_molID_class)
+
+#################
+# FINALIZE STEP #
+#################
+
+def masterlist_to_pdb(filelist, masterlist, target_dir=None):
+    """
+    masterlist_to_pdb
+    """
+    for my_files in filelist:
+        with open(my_files) as myfile:
+            with open(target_dir+"/%s" % (myfile.name), 'w') as newciffile:
+                for molID_class in masterlist:
+                    if (molID_class.file_name == myfile.name):
+                        for line in myfile:
+                            if (line[0:4] == "ATOM") or (line[0:6]=="HETATM"):
+                                # Chains outside map should not exist but just in case
+                                line_split = line.strip()
+                                line_split = line.split()
+                                if line_split[17] in molID_class.chID_newchID_map:
+                                    # Residues have to be renumbered due to concatenations
+                                    if line_split[17] in molID_class.concat_order:
+                                        residue_offset = (molID_class.concat_order[line_split[17]] - 1) * 1000
+                                        new_resinum = int(line_split[15]) + int(residue_offset)
+                                        heresthenew_resinum = int(new_resinum)
+                                        newline = line_split[0] + " " + line_split[1] + " " + line_split[2] + " " + line_split[3] + " " + line_split[4] + " " + line_split[5] + " " + molID_class.chID_newchID_map[line_split[17]] + " " + line_split[7] + " " + line_split[8] + " " + line_split[9] + " " + line_split[10] + " " + line_split[11] + " " + line_split[12] + " " + line_split[13] + " " + line_split[14] + " " + str(heresthenew_resinum) + " " + line_split[16] + " " + molID_class.chID_newchID_map[line_split[17]] + " " + line_split[18] + " " + line_split[19] + "\n"
+                                        newciffile.write(newline)
+                                    else:
+                                        newline = line_split[0] + " " + line_split[1] + " " + line_split[2] + " " + line_split[3] + " " + line_split[4] + " " + line_split[5] + " " + molID_class.chID_newchID_map[line_split[17]] + " " + line_split[7] + " " + line_split[8] + " " + line_split[9] + " " + line_split[10] + " " + line_split[11] + " " + line_split[12] + " " + line_split[13] + " " + line_split[14] + " " + line_split[15] + " " + line_split[16] + " " + molID_class.chID_newchID_map[line_split[17]] + " " + line_split[18] + " " + line_split[19] + "\n"
+                                        newciffile.write(newline)
+
+                                else:
+                                    newciffile.write(line)
+                            # elif (line[0:6] == "COMPND"):
+                            #     if "CHAIN:" in line:
+                            #         newline = line[0:17] + molID_class.chID_newchID_map[line[17]] + line[18:]
+                            #         newciffile.write(newline)
+                            #     else:
+                            #         newciffile.write(line)
+                            else:
+                                newciffile.write(line)
+
+
 
 
