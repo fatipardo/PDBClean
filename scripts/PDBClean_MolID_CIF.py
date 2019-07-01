@@ -137,7 +137,7 @@ if (concat_menu == "START"):
         elif (concat_menu == "4"):
             master_molID_class_list, new_order = molidutils.edit_concatenation_interface(master_molID_class_list, action='update')
         elif (concat_menu == "5"):
-            master_molID_class_list molidutils.edit_concatenation_interface(master_molID_class_list, new_order=new_order, action='accept')[0]
+            master_molID_class_list = molidutils.edit_concatenation_interface(master_molID_class_list, new_order=new_order, action='accept')[0]
         elif (concat_menu == "6"):
             print("Finalizing Curation ...")
             molidutils.masterlist_to_pdb(filelist, master_molID_class_list, target_dir=target_dir)

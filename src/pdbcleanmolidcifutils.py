@@ -641,7 +641,7 @@ def print_conflicts(found_map):
     """
     print("Updating this new chain ID will lead to the following conflicting assingments")
     was_printed = {}
-    for molID_class in found_molID_class_chID_map:
+    for molID_class in found_map:
         for molID in molID_class.molID_chID:
             for chID in molID_class.molID_chID[molID]:
                 if molID_class.complete_order[chID] is False:
@@ -671,8 +671,9 @@ def masterlist_to_pdb(filelist, masterlist, target_dir=None):
     masterlist_to_pdb
     """
     for my_files in filelist:
+        newciffilename=target_dir+'/'+my_files.split('/')[-1]
         with open(my_files) as myfile:
-            with open(target_dir+"/%s" % (myfile.name), 'w') as newciffile:
+            with open(newciffilename, 'w') as newciffile:
                 for molID_class in masterlist:
                     if (molID_class.file_name == myfile.name):
                         for line in myfile:

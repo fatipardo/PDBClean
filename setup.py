@@ -33,11 +33,7 @@ metadata = {
     'license': 'MIT',
     'url': 'https://github.com/csblab/PDBClean',
     'download_url': 'https://github.com/csblab/PDBClean',
-    'install_requires': ['numpy', 'scipy', 
-                         'matplotlib'],
-    'dependency_links' : [],
     'platforms': ['Linux', 'OSX'],
-    'zip_safe': False,
     'description': "PDB curation tools",
     'long_description': """PDBClean offers curation tools for structural ensemble deposited in the Protein Data Bank."""}
 
