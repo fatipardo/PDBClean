@@ -43,6 +43,7 @@ def pdb_to_structurelists(filelist):
                 chid_seq_map[chain.get_id()] = seq
                 chid_list.append(chain.get_id())
         Structure_Sequences.append(chid_seq_map)
+    return Structure_Sequences, structid_list, chid_list
 
 # AA Map from 3 letter amino acid id to 1 letter id
 def ResnConvert(resn):
@@ -119,22 +120,22 @@ def ScoreSequenceAlignment(seq1, seq2):
 # INTERACTIVE STANDARDIZATION FUNCTIONS #
 #########################################
 
-def select_standard_seq_from_reference(Structure_Sequences, structid_list, input_menu_check_1):
+def select_standard_seq_from_reference(Structure_Sequences, Standard_Sequences, structid_list, input_menu_check_1):
     """
     select_standard_seq_from_reference
     """
     input_submenu = ""
     input_submenu_check_1 = ""
     while(input_submenu != "QUIT"):
-        print("""Select Standard Sequences from input structure
-                 1) Show list of input structures
-                 2) Select input structure
-              """)
+        print("    Select Standard Sequences from input structure",
+              "    1) Show list of input structures",
+              "    2) Select input structure",
+              sep="\n")
         if (input_submenu_check_1 == "1"):
-            print("""        3) Remove chains from Standard Sequences
-                             4) Inspect chains in Standard Sequences
-                             5) Return to main menu
-                  """)
+            print("    3) Remove chains from Standard Sequences",
+                  "    4) Inspect chains in Standard Sequences",
+                  "    5) Return to main menu",
+                  sep="\n")
         input_submenu = input('Option Number: ')
         if (input_submenu == "1"):
             show_list(structid_list)
@@ -151,7 +152,7 @@ def select_standard_seq_from_reference(Structure_Sequences, structid_list, input
             input_submenu = "QUIT"
     return Standard_Sequences, input_menu_check_1
 
-def create_standard_seq_from_consensus(Structure_Sequences, chid_list, input_menu_check_1):
+def create_standard_seq_from_consensus(Structure_Sequences, Standard_Sequences, chid_list, input_menu_check_1):
     """
     create_standard_seq_from_consensus
     """
@@ -160,25 +161,26 @@ def create_standard_seq_from_consensus(Structure_Sequences, chid_list, input_men
     input_submenu = ""
     input_submenu_check_1 = ""
     while(input_submenu != "QUIT"):
-        print("""Create Standard Sequences from consensus of input structures. Type QUIT to return to the main menu.
-                 1) Show list of chain IDs for Standard Sequences
-                 2) Enter chain IDs to remove from list
-                 3) Input file with list of chain IDs to remove
-                 4) Create Standard Sequences from consensus of input structures
-              """)
+        print("    Create Standard Sequences from consensus of input structures.",
+              "    Type QUIT to return to the main menu.",
+              "    1) Show list of chain IDs for Standard Sequences",
+              "    2) Enter chain IDs to remove from list",
+              "    3) Input file with list of chain IDs to remove",
+              "    4) Create Standard Sequences from consensus of input structures",
+              sep="\n")
         input_submenu = input('Option Number: ')
         if (input_submenu == "1"):
             show_list(chid_list)
         elif (input_submenu == "2"):
             remove_chid = []
-            print("Enter chain ID to remove. When complete, enter DONE.")
+            print("    Enter chain ID to remove. When complete, enter DONE.")
             while(input_submenu != "DONE"):
                 input_submenu = input('Chain ID: ')
                 remove_chid.append(input_submenu)
             chid_list = remove_chid_from_list(chid_list, remove_chid)
         elif (input_submenu == "3"):
             remove_chid = []
-            print("""Enter the file name containing the list of chain IDs you want removed from Standard Sequences.""")
+            print("    Enter the file name containing the list of chain IDs you want removed from Standard Sequences.")
             input_submenu = input('File: ')
             if (os.path.isfile(input_submenu) == True):
                 my_file = open(input_submenu)
@@ -189,7 +191,7 @@ def create_standard_seq_from_consensus(Structure_Sequences, chid_list, input_men
             chid_list = remove_chid_from_list(chid_list, remove_chid)
         elif (input_submenu == "4"):
             for chid in chid_list:
-                Standard_Sequences = assign_standard_from_consensus(Structure_Sequences, chid)
+                Standard_Sequences = assign_standard_from_consensus(Structure_Sequences, Standard_Sequences, chid)
             input_submenu = "QUIT"
             input_menu_check_1 = "1"
     return Standard_Sequences, input_menu_check_1
@@ -200,11 +202,11 @@ def review_standard_seq(Structure_Sequences, Standard_Sequences):
     """
     input_submenu = ""
     while(input_submenu != "QUIT"):
-        print("""Review Standard Sequences. Type QUIT to return to the main menu.
-                 1) Show list of chain IDs in Standard Sequences
-                 2) Enter chain ID of Standard Sequence to inspect/edit
-                 3) Enter chain ID and inspect consensus of all matching chains
-              """)
+        print("    Review Standard Sequences. Type QUIT to return to the main menu.",
+              "    1) Show list of chain IDs in Standard Sequences",
+              "    2) Enter chain ID of Standard Sequence to inspect/edit",
+              "    3) Enter chain ID and inspect consensus of all matching chains",
+              sep="\n")
         input_submenu = input('Option Number: ')
         if (input_submenu == "1"):
             show_list(Standard_Sequences)
@@ -224,18 +226,18 @@ def align_to_standard_seq(Structure_Sequences, Standard_Sequences, structid_list
     input_submenu= ""
     input_submenu_4_check_1 = ""
     while(input_submenu != "QUIT"):
-        print("""Perform pairwise alignments against Standard Sequences. Type QUIT to return to the main menu.
-                 1) Show list of structure chain IDs to ignore when pairwise aligning to the Standard Sequences
-                 2) Enter chain IDs to add to ignore list
-                 3) Input file with list of chain IDs to add to ignore list
-                 4) Perform pairwise alignments against Standard Sequences and create conversion template
-              """)
+        print("    Perform pairwise alignments against Standard Sequences. Type QUIT to return to the main menu.",
+              "    1) Show list of structure chain IDs to ignore when pairwise aligning to the Standard Sequences",
+              "    2) Enter chain IDs to add to ignore list",
+              "    3) Input file with list of chain IDs to add to ignore list",
+              "    4) Perform pairwise alignments against Standard Sequences and create conversion template",
+              sep="\n")
         input_submenu = input('Option Number: ')
         if (input_submenu == "1"):
             for chid in sorted(ignore_chid):
                 print(chid)
         elif (input_submenu == "2"):
-            print("Enter chain ID to add to ignore list. When complete, enter DONE.")
+            print("    Enter chain ID to add to ignore list. When complete, enter DONE.")
             while(input_submenu != "DONE"):
                 input_submenu = input('Chain ID: ')
                 if (input_submenu != "DONE"):
@@ -350,7 +352,7 @@ def align_to_standard_seq(Structure_Sequences, Standard_Sequences, structid_list
                 input_submenu = "QUIT"
     return ChainReassignmentMapping_List, ChainReassignmentScores_List, input_menu_check_2
 
-def assign_standard_from_consensus(Structure_Sequences, chid):
+def assign_standard_from_consensus(Structure_Sequences, Standard_Sequences, chid):
     """
     """
     this_chainsseq_list, this_chainsseq_score = get_this_chainsseq_list(Structure_Sequences, chid)
@@ -408,10 +410,10 @@ def inspect_chains_in_standard(Standard_Sequences):
     """
     input_submenu = ""
     while(input_submenu != "QUIT"):
-        print("""Inspect chains in Standard Sequences. Type QUIT to return to the main menu.
-                 1) Show list of chain IDs in Standard Sequences
-                 2) Enter chain IDs inspect
-              """)
+        print("    Inspect chains in Standard Sequences. Type QUIT to return to the main menu.",
+              "    1) Show list of chain IDs in Standard Sequences",
+              "    2) Enter chain IDs inspect",
+              sep="\n")
         input_submenu = input('Option Number: ')
         if (input_submenu == "1"):
             for chid in Standard_Sequences:
@@ -429,24 +431,24 @@ def remove_chains_from_standard(Standard_Sequences):
     """
     input_submenu = ""
     while(input_submenu != "QUIT"):
-        print("""Remove chains from Standard Sequences. Type QUIT to return to the main menu.
-                 1) Show list of chain IDs in Standard Sequences
-                 2) Enter chain IDs to remove from list
-                 3) Input file with list of chain IDs to remove
-              """)
+        print("    Remove chains from Standard Sequences. Type QUIT to return to the main menu.",
+              "    1) Show list of chain IDs in Standard Sequences",
+              "    2) Enter chain IDs to remove from list",
+              "    3) Input file with list of chain IDs to remove",
+              sep="\n")
         input_submenu = input('Option Number: ')
         if (input_submenu == "1"):
             show_list(Standard_Sequences)
         elif (input_submenu == "2"):
             remove_chid = []
-            print("""Enter chain IDs of the chains you want removed. When done, enter DONE.""")
+            print("    Enter chain IDs of the chains you want removed. When done, enter DONE.")
             while (input_submenu != "DONE"):
                 input_submenu = input('Chain ID: ')
                 remove_chid.append(input_submenu)
             Standard_Sequences = remove_chid_from_list(Standard_Sequences, remove_chid)
         elif (input_submenu== "3"):
             remove_chid = []
-            print("""Enter the file name containing the list of chain IDs you want removed from Standard Sequences.""")
+            print("    Enter the file name containing the list of chain IDs you want removed from Standard Sequences.")
             input_submenu = input('File: ')
             if (os.path.isfile(input_submenu) == True):
                 my_file = open(input_submenu)
@@ -457,13 +459,13 @@ def remove_chains_from_standard(Standard_Sequences):
             Standard_Sequences = remove_chid_from_list(Standard_Sequences, remove_chid)
     return Standard_Sequences
 
-def remove_chid_from_list(list, remove_chid):
+def remove_chid_from_list(chlist, remove_chid):
     """
     """
     for chid in remove_chid:
-        if chid in list:
-            del list[chid]
-    return list
+        if chid in chlist:
+            del chlist[chid]
+    return chlist
 
 def select_input_structure(Structure_Sequences, structid_list, input_menu_check_1, input_submenu_1_check_1):
     """
@@ -516,7 +518,7 @@ def reassignedmaps_to_pdb(filelist, ChainReassignmentMapping_List, structid_list
                         else:
                             newciffile.write(line)
 
-def reassignedmaps_to_log(ChainReassignmentMapping_List, ChainReassignmentScores_List, structid_list, target_dir=None, verbose=True)
+def reassignedmaps_to_log(ChainReassignmentMapping_List, ChainReassignmentScores_List, structid_list, target_dir=None, verbose=True):
     """
     reassignedmaps_to_log
     """

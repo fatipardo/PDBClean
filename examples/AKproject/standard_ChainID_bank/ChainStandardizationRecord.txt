@@ -1,0 +1,14 @@
+standard_MolID_bank_MANUALFIX/2ar7+06.cif:I:A:0.2775330396475771
+standard_MolID_bank_MANUALFIX/2ar7+07.cif:I:A:0.2775330396475771
+standard_MolID_bank_MANUALFIX/2bbw+01.cif:J:A:0.27312775330396477
+standard_MolID_bank_MANUALFIX/2bbw+02.cif:J:A:0.27312775330396477
+standard_MolID_bank_MANUALFIX/5x6k+01.cif:L:A:0.989247311827957
+standard_MolID_bank_MANUALFIX/5x6k+02.cif:L:A:0.989247311827957
+standard_MolID_bank_MANUALFIX/5x6l+01.cif:A:A:0.989247311827957
+standard_MolID_bank_MANUALFIX/5x6l+02.cif:A:A:0.989247311827957
+standard_MolID_bank_MANUALFIX/5xru+01.cif:A:A:0.989247311827957
+standard_MolID_bank_MANUALFIX/5xru+02.cif:A:A:0.989247311827957
+standard_MolID_bank_MANUALFIX/5ycb+01.cif:A:A:0.9788359788359788
+standard_MolID_bank_MANUALFIX/5ycb+02.cif:A:A:0.9946236559139785
+standard_MolID_bank_MANUALFIX/5ycc+01.cif:A:A:1.0
+standard_MolID_bank_MANUALFIX/5ycc+02.cif:A:A:1.0
