@@ -1,5 +1,6 @@
-import os, shutil, datetime
+import sys, os, shutil, datetime
 #
+
 def check_project(projdir=None, level='top', action='create', verbose=True):
     """
     check_project
