@@ -2,9 +2,18 @@
 Curation toolkit
 
 ## Installation
+
+Assuming you have the required tools and libraries listed below, just type:
+
 `python setup.py install`
 
+### Requirements
+- [muscle](http://www.drive5.com/muscle/downloads.htm)
+
+
 ## Tutorial
+
+The overall protocol is broken down in elementary sequential steps described in the notebooks listed below. 
 
 [0. Download a structural ensemble from the RCSB PDB](https://github.com/csblab/PDBClean/blob/master/notebooks/0.%20Download%20a%20structural%20ensemble%20from%20RCSB%20PDB.ipynb)
 
