@@ -14,6 +14,8 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Align import MultipleSeqAlignment
 from Bio.Alphabet import IUPAC
 from Bio import pairwise2
+from PDBClean.alignmentutils import *
+from PDBClean.listutils import *
 
 ####################
 # INITIALIZE STEPS #
@@ -43,77 +45,9 @@ def pdb_to_structurelists(filelist):
                 chid_seq_map[chain.get_id()] = seq
                 chid_list.append(chain.get_id())
         Structure_Sequences.append(chid_seq_map)
+    chid_set = set(chid_list)
+    chid_list = sorted(list(chid_set))
     return Structure_Sequences, structid_list, chid_list
-
-# AA Map from 3 letter amino acid id to 1 letter id
-def ResnConvert(resn):
-    AA = {}
-    AA["UNK"] = "X"
-    AA["ALA"] = "A"
-    AA["ARG"] = "R"
-    AA["ASN"] = "N"
-    AA["ASP"] = "D"
-    AA["CYS"] = "C"
-    AA["GLN"] = "Q"
-    AA["GLU"] = "E"
-    AA["GLY"] = "G"
-    AA["HIS"] = "H"
-    AA["ILE"] = "I"
-    AA["LEU"] = "L"
-    AA["LYS"] = "K"
-    AA["MET"] = "M"
-    AA["PHE"] = "F"
-    AA["PRO"] = "P"
-    AA["SER"] = "S"
-    AA["THR"] = "T"
-    AA["TRP"] = "W"
-    AA["TYR"] = "Y"
-    AA["VAL"] = "V"
-    AA["A"]   = "A"
-    AA["C"]   = "C"
-    AA["U"]   = "U"
-    AA["G"]   = "G"
-    if resn not in AA:
-        ans = "X"
-    else:
-        ans = AA[resn]
-    return ans
-# END AA Map from 3 letter amino acid id to 1 letter id
-
-def AlignSequences(sequence_vec):
-    # Takes a list of sequence strings and performs a MUSCLE alignment, outputting a vector of aligned sequence strings
-    with open("Seq.fa", 'w') as newfafile:
-        for seq in sequence_vec:
-            newfafile.write("> Seq" + "\n")
-            newfafile.write(seq + "\n")
-
-    os.popen('muscle -in Seq.fa -out Seq.afa')
-
-    time.sleep(1)
-
-    aligned_seq = []
-    with open("Seq.afa") as seqfile:
-        seq = ""
-        for line in seqfile:
-            if (line[0] == ">"):
-                if (seq != ""):
-                    aligned_seq.append(seq)
-                    seq = ""
-            else:
-                seq += line.strip()
-        aligned_seq.append(seq)
-    return (aligned_seq)
-# END AlignSequences
-
-def ScoreSequenceAlignment(seq1, seq2):
-    # Scores based on exact identity. Should  maybe be updated to take longer
-    # of sequences so that it can be used with unaligned seq strings too
-    score = 0
-    for i in range(len(seq1)):
-        if (seq1[i] == seq2[i]):
-            score += 1
-    score = score/len(seq1)
-    return score
 
 
 #########################################
@@ -156,8 +90,6 @@ def create_standard_seq_from_consensus(Structure_Sequences, Standard_Sequences, 
     """
     create_standard_seq_from_consensus
     """
-    chid_set = set(chid_list)
-    chid_list = sorted(list(chid_set))
     input_submenu = ""
     input_submenu_check_1 = ""
     while(input_submenu != "QUIT"):
@@ -172,23 +104,9 @@ def create_standard_seq_from_consensus(Structure_Sequences, Standard_Sequences, 
         if (input_submenu == "1"):
             show_list(chid_list)
         elif (input_submenu == "2"):
-            remove_chid = []
-            print("    Enter chain ID to remove. When complete, enter DONE.")
-            while(input_submenu != "DONE"):
-                input_submenu = input('Chain ID: ')
-                remove_chid.append(input_submenu)
-            chid_list = remove_chid_from_list(chid_list, remove_chid)
+            chid_list = remove_user_defined_chain_from_list(chid_list)
         elif (input_submenu == "3"):
-            remove_chid = []
-            print("    Enter the file name containing the list of chain IDs you want removed from Standard Sequences.")
-            input_submenu = input('File: ')
-            if (os.path.isfile(input_submenu) == True):
-                my_file = open(input_submenu)
-                for line in my_file:
-                    remove_chid.append(line.strip())
-            else:
-                print("File does not exist.")
-            chid_list = remove_chid_from_list(chid_list, remove_chid)
+            chid_list = remove_file_defined_chain_from_list(chid_list)
         elif (input_submenu == "4"):
             for chid in chid_list:
                 Standard_Sequences = assign_standard_from_consensus(Structure_Sequences, Standard_Sequences, chid)
@@ -440,32 +358,10 @@ def remove_chains_from_standard(Standard_Sequences):
         if (input_submenu == "1"):
             show_list(Standard_Sequences)
         elif (input_submenu == "2"):
-            remove_chid = []
-            print("    Enter chain IDs of the chains you want removed. When done, enter DONE.")
-            while (input_submenu != "DONE"):
-                input_submenu = input('Chain ID: ')
-                remove_chid.append(input_submenu)
-            Standard_Sequences = remove_chid_from_list(Standard_Sequences, remove_chid)
+            Standard_Sequences = remove_user_defined_chain_from_list(Standard_Sequences)
         elif (input_submenu== "3"):
-            remove_chid = []
-            print("    Enter the file name containing the list of chain IDs you want removed from Standard Sequences.")
-            input_submenu = input('File: ')
-            if (os.path.isfile(input_submenu) == True):
-                my_file = open(input_submenu)
-                for line in my_file:
-                    remove_chid.append(line.strip())
-            else:
-                print("File does not exist.")
-            Standard_Sequences = remove_chid_from_list(Standard_Sequences, remove_chid)
+            Standard_Sequences = remove_file_defined_chain_from_list(Standard_Sequences)
     return Standard_Sequences
-
-def remove_chid_from_list(chlist, remove_chid):
-    """
-    """
-    for chid in remove_chid:
-        if chid in chlist:
-            del chlist[chid]
-    return chlist
 
 def select_input_structure(Structure_Sequences, structid_list, input_menu_check_1, input_submenu_1_check_1):
     """
@@ -482,13 +378,6 @@ def select_input_structure(Structure_Sequences, structid_list, input_menu_check_
         else:
             print("""File name entered was not in list of files.""")
     return Standard_Sequences, input_menu_check_1, input_submenu_1_check_1
-
-def show_list(list):
-    """
-    show_list
-    """
-    for elt in list:
-        print(elt)
 
 
 #################
