@@ -3,12 +3,21 @@ Curation toolkit
 
 ## Installation
 
+### Download from Pypi
+
+For now we only uploaded the package to TestPypi, so you also need to install the required tools listed below:
+
+`pip install --index-url  https://test.pypi.org/simple/ --no-deps PDBClean`
+
+### Download source and install
+
 Assuming you have the required tools and libraries listed below, just type:
 
 `python setup.py install`
 
-### Requirements
+#### Requirements
 - [muscle](http://www.drive5.com/muscle/downloads.htm)
+- [biopython](https://biopython.org/wiki/Download)
 
 
 ## Tutorial

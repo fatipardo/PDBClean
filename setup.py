@@ -9,6 +9,7 @@ import subprocess
 from os.path import join as pjoin
 from glob import glob
 
+import setuptools
 from distutils.extension import Extension
 from distutils.core import setup
 
@@ -22,7 +23,7 @@ import numpy
 VERSION      = "0.0.1"
 ISRELEASED   = False
 DISABLE_CUDA = True
-__author__   = "Frederic Poitevin"
+__author__   = "Levitt Lab, Stanford"
 __version__  = VERSION
 
 metadata = {
