@@ -13,3 +13,6 @@ Curation toolkit
 [2. Assign MolID to the entities found in the CIF files](https://github.com/csblab/PDBClean/blob/master/notebooks/2.%20Assign%20MolID%20to%20the%20entities%20found%20in%20the%20CIF%20files.ipynb)
 
 [3. Standardize chain IDs](https://github.com/csblab/PDBClean/blob/master/notebooks/3.%20Chain%20ID%20standardization.ipynb)
+
+[4. Standardize residue IDs](https://github.com/csblab/PDBClean/blob/master/notebooks/4.%20Residue%20ID%20standardization.ipynb)
+
