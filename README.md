@@ -1,28 +1,11 @@
 # PDBClean
-Curation toolkit
+PDBClean offers curation tools for structural ensemble deposited in the Protein Data Bank.
 
-## Installation
-
-### Download from Pypi
-
-For now we only uploaded the package to TestPypi, so you also need to install the required tools listed below:
-
-`pip install --index-url  https://test.pypi.org/simple/ --no-deps PDBClean`
-
-### Download source and install
-
-Assuming you have the required tools and libraries listed below, just type:
-
-`python setup.py install`
-
-#### Requirements
-- [muscle](http://www.drive5.com/muscle/downloads.htm)
-- [biopython](https://biopython.org/wiki/Download)
-
+*For installation instructions, please see below.*
 
 ## Tutorial
 
-The overall protocol is broken down in elementary sequential steps described in the notebooks listed below. 
+The overall protocol is broken down in elementary sequential steps described in the notebooks listed below.
 
 [0. Download a structural ensemble from the RCSB PDB](https://github.com/csblab/PDBClean/blob/master/notebooks/0.%20Download%20a%20structural%20ensemble%20from%20RCSB%20PDB.ipynb)
 
@@ -35,3 +18,26 @@ The overall protocol is broken down in elementary sequential steps described in 
 [4. Standardize residue IDs](https://github.com/csblab/PDBClean/blob/master/notebooks/4.%20Residue%20ID%20standardization.ipynb)
 
 [5. Finalize curation](https://github.com/csblab/PDBClean/blob/master/notebooks/5.%20Finalize%20curation.ipynb)
+
+
+## Installation
+
+### Download from Pypi
+
+For now we only uploaded the package to [TestPypi](https://test.pypi.org/project/PDBClean/), so you also need to install the required tools listed below:
+
+`pip install --index-url  https://test.pypi.org/simple/ --no-deps PDBClean`
+
+### Download from Github
+
+Assuming you have the required tools and libraries listed below, just type:
+
+`git clone https://github.com/csblab/PDBClean.git`
+
+`python setup.py install`
+
+#### Requirements
+- [muscle](http://www.drive5.com/muscle/downloads.htm)
+- [biopython](https://biopython.org/wiki/Download)
+
+
