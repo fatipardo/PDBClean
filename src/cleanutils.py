@@ -26,6 +26,22 @@ def process(projdir=None, step='clean', source='raw_bank', target='clean_bank', 
                 simplify_cif(input_cif, output_cif, pdbformat)
             elif(step=='fixhet'):
                 fixhet_cif(input_cif, output_cif, pdbformat)
+            elif(step=='finalize'):
+                finalize(input_cif, output_cif, pdbformat)
+#
+def finalize(oldfile, newfile, pdbformat):
+    """
+    finalize
+    """
+    with open(oldfile) as myfile:
+        newciffile = open(newfile, 'w')
+        for line in myfile:
+            line_split = line.strip()
+            line_split = line.split()
+            if (line_split[0] == "ATOM") or (line_split[0] == "HETATM"):
+                newciffile.write(line_split[0] + " " + line_split[1] + " " + line_split[2] + " " + line_split[3] + " " + line_split[4] + " " + line_split[5] + " " + line_split[17] + " " + line_split[7] + " " + line_split[8] + " " + line_split[9] + " " + line_split[10] + " " + line_split[11] + " " + line_split[12] + " " + line_split[13] + " " + line_split[14] + " " + line_split[15] + " " + line_split[16] + " " + line_split[17] + " " + line_split[18] + " " + line_split[19] + "\n")
+            else:
+                newciffile.write(line)
 #
 def fixhet_cif(oldfile, newfile, pdbformat):
     """

@@ -25,3 +25,4 @@ The overall protocol is broken down in elementary sequential steps described in 
 
 [4. Standardize residue IDs](https://github.com/csblab/PDBClean/blob/master/notebooks/4.%20Residue%20ID%20standardization.ipynb)
 
+[5. Finalize curation](https://github.com/csblab/PDBClean/blob/master/notebooks/5.%20Finalize%20curation.ipynb)
