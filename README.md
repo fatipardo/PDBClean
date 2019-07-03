@@ -3,7 +3,9 @@ PDBClean offers curation tools for structural ensemble deposited in the Protein 
 
 *For installation instructions, please see below.*
 
-## Tutorial
+## Tutorials
+
+### Downloading and curating a structural ensemble
 
 The overall protocol is broken down in elementary sequential steps described in the following notebooks
 
@@ -19,6 +21,15 @@ The overall protocol is broken down in elementary sequential steps described in 
 
 [5. Finalize curation](https://github.com/csblab/PDBClean/blob/master/notebooks/5.%20Finalize%20curation.ipynb)
 
+
+### Extracting a homogeneous dataset
+
+For many types of analysis, one would need to be able to load the dataset as a feature-by-sample array that requires all samples to exhibit the same features. This homogeneization step is not unique
+
+
+### Analysis of the resulting dataset
+
+#### Conformational heterogeneity
 
 ## Installation
 
