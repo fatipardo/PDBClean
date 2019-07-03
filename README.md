@@ -1,7 +1,7 @@
 # PDBClean
 PDBClean offers curation tools for structural ensemble deposited in the Protein Data Bank.
 
-*For installation instructions, please see below.*
+*For installation instructions, please see [below](#installation).*
 
 ## Tutorials
 
@@ -21,6 +21,10 @@ The overall protocol is broken down in elementary sequential steps described in 
 
 [5. Finalize curation](https://github.com/csblab/PDBClean/blob/master/notebooks/5.%20Finalize%20curation.ipynb)
 
+
+### Sharing curated dataset
+
+We provide some ways to upload datasets to and download datasets from [OSF](osf.io), together with our examples.
 
 ### Extracting a homogeneous dataset
 
