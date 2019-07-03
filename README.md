@@ -26,6 +26,10 @@ The overall protocol is broken down in elementary sequential steps described in 
 
 We provide some ways to upload datasets to and download datasets from [OSF](osf.io), together with our examples.
 
+[Pulling and pushing datasets on OSF](https://github.com/csblab/PDBClean/blob/master/notebooks/Datasets%20in%20the%20cloud%20-%20how%20to%20pull%20and%20push.ipynb)
+
+[List of datasets curated by the Levitt Lab](https://github.com/csblab/PDBClean/blob/master/notebooks/List%20of%20datasets%20curated%20by%20the%20Levitt%20Lab.ipynb)
+
 ### Extracting a homogeneous dataset
 
 For many types of analysis, one would need to be able to load the dataset as a feature-by-sample array that requires all samples to exhibit the same features. This homogeneization step is not unique
