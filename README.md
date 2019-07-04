@@ -34,6 +34,7 @@ We provide some ways to upload datasets to and download datasets from [OSF](osf.
 
 For many types of analysis, one would need to be able to load the dataset as a feature-by-sample array that requires all samples to exhibit the same features. This homogeneization step is not unique
 
+[Extracting a homogeneous dataset](https://github.com/csblab/PDBClean/blob/master/notebooks/Extracting%20a%20homogeneous%20dataset.ipynb)
 
 ### Analysis of the resulting dataset
 
