@@ -32,13 +32,13 @@ localdir=${2%/}
 if [ ! -d $localdir ]; then echo "Usage error: $localdir does not exists."; exit; fi
 # [check file list]
 updatels=${4:-'no'}
+now=`date +"%Y%m%d-%H:%M"`
+osfls=${now}'_list.txt'
 if [ "$updatels" == 'yes' ]; then
-  now=`date +"%Y%m%d-%H:%M"`
-  osfls=${now}'_list.txt'
   echo "list of files on OSF will be stored in $osfls"
   osf ls > $osfls
 else
-  osfls=$5
+  if [ $# -eq 5 ]; then osfls=$5 ; fi
   if [  ! -f $osfls ]; then
     echo "$osfls was not found. Updated list of files on OSF will be stored in $osfls"
     osf ls > $osfls
