@@ -30,6 +30,10 @@ We provide some ways to upload datasets to and download datasets from [OSF](osf.
 
 [List of datasets curated by the Levitt Lab](https://github.com/csblab/PDBClean/blob/master/notebooks/List%20of%20datasets%20curated%20by%20the%20Levitt%20Lab.ipynb)
 
+### Chain and atom selection
+
+[Chain and atom selection](https://github.com/csblab/PDBClean/blob/master/notebooks/Chain%20and%20atom%20selection.ipynb)
+
 ### Extracting a homogeneous dataset
 
 For many types of analysis, one would need to be able to load the dataset as a feature-by-sample array that requires all samples to exhibit the same features. This homogeneization step is not unique

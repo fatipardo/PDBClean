@@ -1,4 +1,4 @@
-import sys, os, shutil, datetime
+import sys, os, glob, shutil, datetime
 #
 
 def check_project(projdir=None, level='top', action='create', verbose=True):
@@ -17,6 +17,55 @@ def check_project(projdir=None, level='top', action='create', verbose=True):
             clean_dir(dirname, verbose=verbose)
         elif(action=='delete'):
             delete_dir(dirname, verbose=verbose)
+
+#################
+# FILE HANDLING #
+#################
+
+def new_filepath(input_file, output_dir, force_new=True):
+    """
+    """
+    filename = os.path.basename(input_file)
+    output_file = output_dir+'/'+filename
+    if force_new:
+        if os.path.exists(output_file):
+            os.remove(output_file)
+    return output_file
+
+def list_files_in_dir(path, ext):
+    """
+    list_files_in_dir
+    """
+    filelist = ()
+    if os.path.exists(path):
+        filelist = glob.glob(path+'/*'+ext)
+    return filelist
+
+######################
+# DIRECTORY HANDLING #
+######################
+
+def define_dirs(project_dir=None, source=None, target=None):
+    """
+    define_dirs
+
+    Input  : project_dir, source and target
+    Output : source_dir = project_dir+/+source
+             target_dir = project_dir+/+target
+    """
+    if project_dir is None:
+        source_dir = None
+        target_dir = None
+    else:
+        if source is None:
+            source_dir = None
+        else:
+            source_dir = project_dir+'/'+source
+        if target is None:
+            target_dir = None
+        else:
+            target_dir = project_dir+'/'+target
+    return source_dir, target_dir
 
 def create_dir(dirpath, verbose=True):
     """
@@ -50,3 +99,16 @@ def delete_dir(dirpath, verbose=True):
         shutil.rmtree(dirpath)
         if verbose:
             print('Deleting {0}...'.format(dirpath))
+
+##########################
+# COLABORATORY INTERFACE #
+##########################
+
+def define_rundir(local_relative_path, colab=False):
+    """
+    """
+    if not colab:
+        RUNDIR=local_relative_path
+    else:
+        RUNDIR='./'
+    return RUNDIR

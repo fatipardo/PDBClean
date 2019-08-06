@@ -1,35 +1,78 @@
 import os, glob
 import re
 from Bio.PDB.MMCIF2Dict import MMCIF2Dict
+from PDBClean import pdbclean_io as pcio
+from PDBClean import pdbclean_homogenutils as homogen
+from PDBClean import pdbclean_cifutils as cif
 #
-def process(projdir=None, step='clean', source='raw_bank', target='clean_bank', pdbformat='.cif', verbose=True):
+def process(projdir=None, source='raw_bank', target='clean_bank', 
+            pdbformat='.cif', verbose=True, show=False, dry_run=False,
+            step='clean', **kwargs):
     """
     process
     """
-    if projdir is not None:
-        source_dir = projdir+'/'+source
-        target_dir = projdir+'/'+target
-        input_list = glob.glob(source_dir+'/*'+pdbformat)
-        i=0
-        for input_cif in input_list:
-            cif_name=os.path.basename(input_cif)
-            if verbose:
-                i+=1
-                print('[{0}/{1}]: {2}'.format(i,len(input_list),cif_name))
-            output_cif=target_dir+'/'+cif_name
-            if(step=='clean'):
-                if os.path.isfile(output_cif):
-                    os.remove(output_cif)
-                clean_cif(input_cif, output_cif)
-            elif(step=='simplify'):
-                # missing line: remove all assembly cif already created
-                simplify_cif(input_cif, output_cif, pdbformat)
-            elif(step=='fixhet'):
-                fixhet_cif(input_cif, output_cif, pdbformat)
-            elif(step=='finalize'):
-                finalize(input_cif, output_cif, pdbformat)
+    source_dir, target_dir = pcio.define_dirs(project_dir=projdir, source=source, target=target)
+    input_list = pcio.list_files_in_dir(path=source_dir, ext=pdbformat)
+    process_inputlist(input_list, target_dir, pdbformat=pdbformat,
+                      verbose=verbose, show=show, dry_run=dry_run,
+                      step=step, **kwargs)
+
+def process_inputlist(input_list, target_dir, pdbformat='.cif',
+                      verbose=True, show=False, dry_run=False,
+                      step='clean', **kwargs):
+    """
+    process_inputlist
+    """
+    print(kwargs)
+    # - initialize if needed
+    keychain, input_list = init_process(input_list, step=step, 
+                                        verbose=verbose, show=show, **kwargs )
+    # - iteratively process each file in the list
+    i=0
+    for input_file in input_list: 
+        output_file  = pcio.new_filepath(input_file, target_dir)
+        if verbose:
+            i+=1
+            print('[{0}/{1}]: {2}'.format(i,len(input_list), output_file))
+        if(step=='clean'):
+            clean(input_file, output_file)
+        elif(step=='simplify'):
+            simplify(input_file, output_file, pdbformat)
+        elif(step=='fixhet'):
+            fixhet(input_file, output_file)
+        elif(step=='finalize'):
+            finalize(input_file, output_file)
+        elif(step=='homogenize'):
+            reduce_to_keychain(input_file, output_file, keychain)
+        elif(step=='select'):
+            reduce_to_keychain(input_file, output_file, keychain)
+
+####
+
+def init_process(input_list, step='clean', verbose=True, show=False, **kwargs):
+    """
+    init_process
+    """
+    if(step=='select' or step=='homogenize'):
+        keychain = cif.pdbs_to_keychain(input_list, verbose=verbose, **kwargs)
+    if(step=='homogenize'):
+        if(kwargs['mode']=='keep_all_samples'):
+            keychain = homogen.reduce_feature_keep_samples(keychain, input_list,
+                                                           verbose=verbose, show=show)
+        else:
+            keychain, input_list = homogen.reduce_optimized(keychain, input_list,
+                                                            verbose=verbose, show=show)
+    return keychain, input_list
+
+def reduce_to_keychain(input_file, output_file, keychain):
+    """
+    reduce_to_keychain
+    """
+    cifdict = cif.read_dict_from_file(input_file, keychain=keychain)
+    cif.write_dict_to_cif(cifdict, output_file)
+
 #
-def finalize(oldfile, newfile, pdbformat):
+def finalize(oldfile, newfile):
     """
     finalize
     """
@@ -43,9 +86,9 @@ def finalize(oldfile, newfile, pdbformat):
             else:
                 newciffile.write(line)
 #
-def fixhet_cif(oldfile, newfile, pdbformat):
+def fixhet(oldfile, newfile, pdbformat):
     """
-    fixhet_cif
+    fixhet
     """
     with open(oldfile) as myfile:
         hetch_count_map = {}
@@ -77,9 +120,9 @@ def fixhet_cif(oldfile, newfile, pdbformat):
             else:
                 newciffile.write(line)
 #
-def simplify_cif(oldfile, newfile, pdbformat):
+def simplify(oldfile, newfile, pdbformat):
     """
-    simplify_cif
+    simplify
     """
     mmcif_dict = MMCIF2Dict(oldfile)
     #
@@ -270,9 +313,9 @@ def simplify_cif(oldfile, newfile, pdbformat):
                         newciffile.write(L1[i] + " " + L2[i] + " " + L3[i] + ' "' + L4[i] + '" ' + L5[i] + " " + L6[i] + " " + L7[i] + " " + L8[i] + " " + L9[i] + " " + L10[i] + " " + L11[i] + " " + L12[i] + " " + L13[i] + " " + L14[i] + " " + L15[i] + " " + L16[i] + " " + L17[i] + " " + "het" + L6[i] + L18[i] + ' "' + L19[i] + '" ' + L20[i] + "\n")
         newciffile.write("#" + "\n")
 #
-def clean_cif(oldfile, newfile):
+def clean(oldfile, newfile):
     """
-    clean_cif
+    clean
     """
     entry_list = ['_entry.id',
                   '_atom_site.group_PDB',

@@ -1,6 +1,5 @@
-#
 import os
-#
+ 
 def remove_file_defined_chain_from_list(list):
     """
     """
