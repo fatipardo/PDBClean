@@ -16,6 +16,6 @@ def filelist_to_crdarray(filelist):
         if crds is None:
             crds = new_crd
         else:
-            print(crds.shape, new_crd.shape)
+            #print(crds.shape, new_crd.shape)
             crds = np.concatenate((crds, new_crd), axis=0)
     return crds

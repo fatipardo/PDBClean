@@ -2,7 +2,19 @@ import numpy as np
 import itertools
 from Bio.PDB.MMCIF2Dict import MMCIF2Dict
 from Bio.PDB.mmcifio import MMCIFIO
+from Bio.PDB.MMCIFParser import MMCIFParser
+from Bio.PDB import PDBIO
 #
+def cif2pdb(ciffile, pdbfile):
+    """
+    cif2pdb
+    """
+    parser = MMCIFParser()
+    structure = parser.get_structure('traj', ciffile)
+    io = PDBIO()
+    io.set_structure(structure)
+    io.save(pdbfile)
+
 def write_dict_to_cif(cifdict, ciffile):
     """
     write_dict_to_cif:

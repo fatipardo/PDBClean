@@ -23,7 +23,7 @@ def process_inputlist(input_list, target_dir, pdbformat='.cif',
     """
     process_inputlist
     """
-    print(kwargs)
+    #print(kwargs)
     # - initialize if needed
     keychain, input_list = init_process(input_list, step=step, 
                                         verbose=verbose, show=show, **kwargs )
@@ -53,6 +53,7 @@ def init_process(input_list, step='clean', verbose=True, show=False, **kwargs):
     """
     init_process
     """
+    keychain=[]
     if(step=='select' or step=='homogenize'):
         keychain = cif.pdbs_to_keychain(input_list, verbose=verbose, **kwargs)
     if(step=='homogenize'):
@@ -130,16 +131,23 @@ def simplify(oldfile, newfile, pdbformat):
     # assembly_id information may be either str or list type, so I'm going to force
     # to list type
     asym_assembly_map = {}
-    assembly_id = mmcif_dict['_pdbx_struct_assembly_gen.assembly_id']
+    if '_pdbx_struct_assembly_gen.assembly_id' in mmcif_dict:
+        assembly_id = mmcif_dict['_pdbx_struct_assembly_gen.assembly_id']
+    else:
+        assembly_id = 'X'
+    if '_pdbx_struct_assembly_gen.asym_id_list' in mmcif_dict:
+        asym_id = mmcif_dict['_pdbx_struct_assembly_gen.asym_id_list']
+    else:
+        asym_id = 'X'
     if not isinstance(assembly_id, list):
         assembly_id_list = []
         asym_id_list = []
         assembly_id_list.append(assembly_id)
-        asym_id_list.append(mmcif_dict['_pdbx_struct_assembly_gen.asym_id_list'])
+        asym_id_list.append(asym_id)
     else:
         assembly_id_list = []
         assembly_id_list = assembly_id
-        asym_id_list = mmcif_dict['_pdbx_struct_assembly_gen.asym_id_list']
+        asym_id_list = asym_id
     # Convert asym_id entry into a list of asym_ids
     for i in range(len(assembly_id_list)):
         asym_id = asym_id_list[i]
@@ -208,14 +216,18 @@ def simplify(oldfile, newfile, pdbformat):
             L1 = mmcif_dict['_exptl.method']
         elif '_refine_hist.pdbx_refine_id' in mmcif_dict:
             L1 = mmcif_dict['_refine_hist.pdbx_refine_id']
-        else:
+        elif '_refine.pdbx_refine_id' in mmcif_dict:
             L1 = mmcif_dict['_refine.pdbx_refine_id']
+        else:
+            L1 = 'X'
         if '_refine.ls_d_res_high' in mmcif_dict:
             L2 = mmcif_dict['_refine.ls_d_res_high']
         elif '_em_3d_reconstruction.resolution' in mmcif_dict:
             L2 = mmcif_dict['_em_3d_reconstruction.resolution']
-        else:
+        elif '_refine_hist.d_res_high' in mmcif_dict:
             L2 = mmcif_dict['_refine_hist.d_res_high']
+        else:
+            L2 = 'X'
         if isinstance(L1, list) and isinstance(L2, list):
             for i in range(len(L1)):
                 newciffile.write("'" + L1[i] + "' " + L2[i] + " " + "\n")
