@@ -1,5 +1,6 @@
 # our stuff here
 *.cif
+*.pdb
 data/pdb_seqres.txt
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -170,6 +170,12 @@ def save_mode(traj,prj,n=np.arange(1),v=None,pc_thresh=0.75,keyword='mode',movie
                 traj_IC.xyz[iframe:iframe+1,:] += xyz_mean.reshape(traj.n_atoms,3)
         save_traj(traj_IC,keyword=key+str(ic+1),verbose=verbose)
 
+def load_mode(filepath):
+    """
+    """
+    traj = mdtraj.load(filepath)
+    return traj
+
 def get_mode(traj,v=None,pc_thresh=0.75,analysis_type='ica'):
     """ get_mode : returns mode along one component.
     
