@@ -2,6 +2,7 @@ from __future__ import print_function
 from __future__ import division
 import os
 import time
+import subprocess
 
 # AA Map from 3 letter amino acid id to 1 letter id
 def ResnConvert(resn):
@@ -72,8 +73,10 @@ def AlignSequences_v2(sequence_vec, file_name):
             newfafile.write(seq + "\n")
             i += 1
     command = "muscle -in "+file_name+".fa -out "+file_name+".afa"
-    os.popen(command)
-    time.sleep(1)
+    p = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+    (output, err) = p.communicate()
+    p_status = p.wait()
+    #
     aligned_seq_map = {}
     aligned_seq = []
     seq = ""

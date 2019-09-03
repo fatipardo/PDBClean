@@ -1,5 +1,6 @@
 import os, glob
 import re
+import numpy as np
 from Bio.PDB.MMCIF2Dict import MMCIF2Dict
 from PDBClean import pdbclean_io as pcio
 from PDBClean import pdbclean_homogenutils as homogen
@@ -87,7 +88,7 @@ def finalize(oldfile, newfile):
             else:
                 newciffile.write(line)
 #
-def fixhet(oldfile, newfile, pdbformat):
+def fixhet(oldfile, newfile):
     """
     fixhet
     """
@@ -134,11 +135,12 @@ def simplify(oldfile, newfile, pdbformat):
     if '_pdbx_struct_assembly_gen.assembly_id' in mmcif_dict:
         assembly_id = mmcif_dict['_pdbx_struct_assembly_gen.assembly_id']
     else:
-        assembly_id = 'X'
+        assembly_id = '1'
     if '_pdbx_struct_assembly_gen.asym_id_list' in mmcif_dict:
         asym_id = mmcif_dict['_pdbx_struct_assembly_gen.asym_id_list']
     else:
-        asym_id = 'X'
+        asym_id = 'A'
+    #
     if not isinstance(assembly_id, list):
         assembly_id_list = []
         asym_id_list = []
@@ -148,6 +150,17 @@ def simplify(oldfile, newfile, pdbformat):
         assembly_id_list = []
         assembly_id_list = assembly_id
         asym_id_list = asym_id
+    # Only keep one asymmetric unit
+    id_remove = []
+    if(len(asym_id_list)>1):
+        for i in np.arange(len(asym_id_list)-1):
+            for j in np.arange(i+1,len(asym_id_list)):
+                if(asym_id_list[j] == asym_id_list[i]):
+                    id_remove.append(j)
+    if(len(id_remove)>0):
+        for i in id_remove:
+            del asym_id_list[i]
+            del assembly_id_list[i]
     # Convert asym_id entry into a list of asym_ids
     for i in range(len(assembly_id_list)):
         asym_id = asym_id_list[i]
@@ -170,6 +183,7 @@ def simplify(oldfile, newfile, pdbformat):
                 entity_asym_assembly_map[entity_id_list[i]].append(asym_id_list[i])
         else:
             entity_asym_assembly_map[entity_id_list[i]] = [asym_id_list[i]]
+    #
     # Start writing to file for each biological assembly unit (different structure)
     for assembly in assembly_id_list:
         if (len(assembly_id_list)==1):
@@ -204,9 +218,11 @@ def simplify(oldfile, newfile, pdbformat):
         L3 = mmcif_dict['_citation.pdbx_database_id_DOI']
         if isinstance(L1, list):
             for i in range(len(L1)):
-                newciffile.write("'" + re.sub("'", "", L1[i]) + "' " + L2[i] + " " + L3[i] + "\n")
+                #newciffile.write("'" + re.sub("'", "", L1[i]) + "' " + L2[i] + " " + L3[i] + "\n")
+                newciffile.write("'" + re.sub("'|\n|\r", "", L1[i]) + "' " + L2[i] + " " + L3[i] + "\n")
         else:
-            newciffile.write("'" + re.sub("'", "", L1) + "' " + L2 + " " + L3 + "\n")
+            #newciffile.write("'" + re.sub("'", "", L1) + "' " + L2 + " " + L3 + "\n")
+            newciffile.write("'" + re.sub("'|\n|\r", "", L1) + "' " + L2 + " " + L3 + "\n")
         # Write Resolution category
         newciffile.write("#" + "\n")
         newciffile.write("loop_" + "\n")
@@ -339,16 +355,16 @@ def clean(oldfile, newfile):
                   '_em_3d_reconstruction.resolution',
                   '_refine_hist.pdbx_refine_id',
                   '_refine.pdbx_refine_id']
-    keylength_list = [ 9,
-                       20,
-                       21,
-                       15,
-                       37,
-                       24,
-                       13,
-                       32,
-                       27,
-                       22]
+    #keylength_list = [ 9,
+    #                   20,
+    #                   21,
+    #                   15,
+    #                   37,
+    #                   24,
+    #                   13,
+    #                   32,
+    #                   27,
+    #                   22]
     with open(oldfile) as old_file:
         alllines = []
         linecount = 0
@@ -359,8 +375,9 @@ def clean(oldfile, newfile):
             if linecount == 0:
                 with open(newfile, 'a') as new_file:
                     new_file.write(alllines[0])
-            for entry, keylength in zip(entry_list, keylength_list):
-                flag = check_and_write_entry(entry, line, alllines, line[0:keylength], flag, range(poundline, linecount), newfile)
+            #for entry, keylength in zip(entry_list, keylength_list):
+            for entry in entry_list:
+                flag = check_and_write_entry(entry, line, alllines, line[0:len(entry)], flag, range(poundline, linecount), newfile)
             if '#' in line[0]:
                 poundline = linecount
             linecount += 1

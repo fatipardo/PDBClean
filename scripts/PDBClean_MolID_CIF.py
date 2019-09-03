@@ -47,22 +47,22 @@ concat_menu = ""
 
 while(input_menu != "QUIT"):
     if (input_menu_complete == "1"):
-        print("""Congratulations! You have successfully constructed your
-                 conversion templates. You can proceed to the next section 
-                 by selection option 7 or, continue to edit your conversion 
-                 template through this menu
-              """)
-    print("""PDBClean MolID Conversion Build Menu
-             Select one of the following options to proceed:
-             1) Show full conversion
-             2) Show only unassigned conversions
-             3) Enter input file
-             4) Search MolID to add chain ID conversion
-             5) Go entry by entry to add chain ID conversion
-             6) Remove a chain ID conversion
-          """)
+        print("Congratulations! You have successfully constructed your",
+              "conversion templates. You can proceed to the next section", 
+              "by selection option 7 or, continue to edit your conversion ",
+              "template through this menu",
+              sep="\n")
+    print("PDBClean MolID Conversion Build Menu",
+          "Select one of the following options to proceed:",
+          "  1) Show full conversion",
+          "  2) Show only unassigned conversions",
+          "  3) Enter input file",
+          "  4) Search MolID to add chain ID conversion",
+          "  5) Go entry by entry to add chain ID conversion",
+          "  6) Remove a chain ID conversion",
+          sep="\n")
     if (input_menu_complete == "1"):
-        print("    7) Continue to next step of curation")
+        print("  7) Continue to next step of curation")
     input_menu = input('Option Number: ')
     if (input_menu == "1"):
         molidutils.show_full_conversion(molIDConversion_list)
@@ -103,28 +103,31 @@ if (concat_menu == "START"):
 
     while(concat_menu != "QUIT"):
 
+        if master_molID_class_list is None:
+            print('master_molID_class_list is None...')
+
         count_problems = molidutils.problem_counter(master_molID_class_list)
         if (count_problems == 0):
             concat_menu_complete = "1"
 
         if (concat_menu_complete == "1"):
-            print("""Congratulations! You have successfully constructed your
-                     conversion templates.You can proceed to the next section 
-                     by selection option 7 or, continue to edit your conversion 
-                     template through this menu
-                  """)
-        print("""PDBClean Concatenations Menu
-                 Note: All proposed concatenations must be accepted before the curation can
-                 be completed.
-                 Select one of the following options to proceed:
-                 1) Show all conversions
-                 2) Show only unaccepted concatenations
-                 3) Search and modify destination chainIDs of proposed concatenations
-                 4) Search and modify order of proposed concatenations
-                 5) Search and accept proposed concatenations
-              """)
+            print("Congratulations! You have successfully constructed your",
+                  "conversion templates.You can proceed to the next section",
+                  "by selection option 7 or, continue to edit your conversion", 
+                  "template through this menu",
+                  sep="\n")
+        print("PDBClean Concatenations Menu",
+              "Note: All proposed concatenations must be accepted before the curation can be completed.",
+              "Select one of the following options to proceed:",
+              "  1) Show all conversions",
+              "  2) Show only unaccepted concatenations",
+              "  3) Search and modify destination chainIDs of proposed concatenations",
+              "  4) Search and modify order of proposed concatenations",
+              "  5) Search and accept proposed concatenations",
+              "  6) Accept all proposed concatenations",
+              sep="\n")
         if (concat_menu_complete == "1"):
-            print("    6) Finalize Curation")
+            print("  7) Finalize Curation")
 
         concat_menu = input('Option Number: ')
 
@@ -133,12 +136,14 @@ if (concat_menu == "START"):
         elif (concat_menu == "2"):
             molidutils.show_unassigned_conversion(master_molID_class_list, step='concatenation')
         elif (concat_menu == "3"):
-            master_molID_class_list = molidutils.edit_concatenation_interface(master_molID_class_list, action='try')[0]
+            master_molID_class_list = molidutils.edit_concatenation_interface(master_molID_class_list, action='try')
         elif (concat_menu == "4"):
-            master_molID_class_list, new_order = molidutils.edit_concatenation_interface(master_molID_class_list, action='update')
+            master_molID_class_list = molidutils.edit_concatenation_interface(master_molID_class_list, action='update')
         elif (concat_menu == "5"):
-            master_molID_class_list = molidutils.edit_concatenation_interface(master_molID_class_list, new_order=new_order, action='accept')[0]
+            master_molID_class_list = molidutils.edit_concatenation_interface(master_molID_class_list, action='accept')
         elif (concat_menu == "6"):
+            master_molID_class_list = molidutils.edit_concatenation_interface(master_molID_class_list, action='accept_all')
+        elif (concat_menu == "7"):
             print("Finalizing Curation ...")
             molidutils.masterlist_to_pdb(filelist, master_molID_class_list, target_dir=target_dir)
             concat_menu = "QUIT"

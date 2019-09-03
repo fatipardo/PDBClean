@@ -513,31 +513,33 @@ def problem_counter(master_molID_class_list):
                 count_problems += 1
     return count_problems
 
-def edit_concatenation_interface(master_molID_class_list, new_order=None, action='accept'):
+def edit_concatenation_interface(master_molID_class_list, action='accept'):
     """
     edit_concatenation_interface
     """
     concat_submenu = 0
+    #
+    if(action=='accept_all'):
+        for molID_class in master_molID_class_list:
+            for molID in molID_class.molID_chID:
+                for chID in molID_class.molID_chID[molID]:
+                    molID_class.force_complete_order(chID, True)
+        concat_submenu = "QUIT"
+    #
     while(concat_submenu != "QUIT"):
         search_term, concat_submenu = get_search_term(concat_submenu)
         if concat_submenu != "QUIT":
             found_molID_class_chID_map, molID_class_been_copied = search_chains(master_molID_class_list, search_term)
         while (concat_submenu != "QUIT"):
+            print("Select one of the following options to proceed:",
+                  "  1) Perform new search",
+                  sep="\n")
             if(action=='try'):
-                print("""Select one of the following options to proceed:
-                         1) Perform new search
-                         2) Update new chain ID
-                      """)
+                print("  2) Update new chain ID")
             elif(action=='update'):
-                print("""Select one of the following options to proceed:
-                         1) Perform new search
-                         2) Update concatenation order
-                      """)
+                print("  2) Update concatenation order")
             elif(action=='accept'):
-                print("""Select one of the following options to proceed:
-                         1) Perform new search
-                         2) Accept planned concatenation
-                      """)
+                print("  2) Accept planned concatenation")
             concat_submenu = input('Option Number: ')
             if (concat_submenu == "1"):
                 break
@@ -546,6 +548,8 @@ def edit_concatenation_interface(master_molID_class_list, new_order=None, action
                     new_order = input('New Chain ID: ')
                 elif(action=='update'):
                     new_order = input('New concatenation order: ')
+                else:
+                    new_order = 0
                 found_molID_class_chID_map = edit_chain_order(found_molID_class_chID_map, new_order, action=action)
                 if(action=='try'):
                     print_conflicts(found_molID_class_chID_map)
@@ -555,11 +559,10 @@ def edit_concatenation_interface(master_molID_class_list, new_order=None, action
                         if (concat_submenu == "ACCEPT"):
                             master_molID_class_list = accept_newchain(master_molID_class_list, found_molID_class_chID_map)
                         concat_submenu = "QUIT"
-                        concat_menu = ""
                 else:
                     master_molID_class_list = accept_newchain(master_molID_class_list, found_molID_class_chID_map)
                     concat_submenu = "QUIT"
-    return master_molID_class_list, new_order
+    return master_molID_class_list
 
 def get_search_term(value):
     """
@@ -661,6 +664,7 @@ def accept_newchain(masterlist, found_map):
                     usage[updated_molID_class] = 1
                     masterlist.remove(molID_class)
                     masterlist.append(updated_molID_class)
+    return masterlist
 
 #################
 # FINALIZE STEP #

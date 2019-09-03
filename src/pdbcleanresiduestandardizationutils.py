@@ -72,7 +72,10 @@ def perform_multiple_alignment(Structure_Sequences, ChID_ResiNum_Vector, structi
         elif (input_submenu == "3"):
             chid_list = remove_file_defined_chain_from_list(chid_list)
         elif (input_submenu == "4"):
+            print('CHAINS')
             for chid in chid_list:
+                print('CHID is {0}'.format(chid))
+                print('...1')
                 this_chainsseq_list = []
                 this_chainsseq_aligned_list = []
                 for I in range(len(structid_list)):
@@ -80,12 +83,14 @@ def perform_multiple_alignment(Structure_Sequences, ChID_ResiNum_Vector, structi
                     if key in Structure_Sequences:
                         this_chainsseq_list.append(Structure_Sequences[key])
                 this_chainsseq_aligned_list = AlignSequences_v2(this_chainsseq_list, chid)
+                print('...2')
                 i = 0
                 for I in range(len(structid_list)):
                     key = str(structid_list[I]) + "_" + chid
                     if key in Structure_Sequences:
                         Structure_Sequences_Aligned[key] = this_chainsseq_aligned_list[i]
                         i += 1
+            print('STRUCTS')
             for I in range(len(structid_list)):
                 conversion_template = {}
                 for chain in ChID_ResiNum_Vector[I]:

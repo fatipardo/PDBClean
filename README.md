@@ -7,6 +7,8 @@ PDBClean offers curation tools for structural ensemble deposited in the Protein 
 
 ### Downloading and curating a structural ensemble
 
+![](figures/fig_download_pdb.png)
+
 The overall protocol is broken down in elementary sequential steps described in the following notebooks
 
 [0. Download a structural ensemble from the RCSB PDB](https://github.com/csblab/PDBClean/blob/master/notebooks/0.%20Download%20a%20structural%20ensemble%20from%20RCSB%20PDB.ipynb)
