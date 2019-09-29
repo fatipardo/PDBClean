@@ -91,7 +91,7 @@ def cifdict_to_arrkeys(cifdict, **kwargs):
         if(arg=='atoms'):
             atoms = True
     select = bool(chains+resid+atoms)
-    mask   = np.full(atom_id.shape[0], False) 
+    mask = np.full(atom_id.shape[0], False, dtype=bool)
     if chains:
         mask_chain = np.copy(mask)
         for chain in kwargs['chains']:
@@ -102,7 +102,7 @@ def cifdict_to_arrkeys(cifdict, **kwargs):
             mask_atom += np.ma.masked_where(atom_id==atom, atom_id).mask
     if select:
         mask = mask_chain*mask_atom
-        mask = np.invert(mask)
+        mask = np.invert(mask.astype(bool))
     arrkeys = np.column_stack((np.ma.masked_array(asym_id, mask=mask).compressed(),
                                np.ma.masked_array(seq_id,  mask=mask).compressed(),
                                np.ma.masked_array(atom_id, mask=mask).compressed()))

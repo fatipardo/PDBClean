@@ -30,7 +30,7 @@ def process_inputlist(input_list, target_dir, pdbformat='.cif',
                                         verbose=verbose, show=show, **kwargs )
     # - iteratively process each file in the list
     i=0
-    for input_file in input_list: 
+    for input_file in input_list:
         output_file  = pcio.new_filepath(input_file, target_dir)
         if verbose:
             i+=1
@@ -61,7 +61,7 @@ def init_process(input_list, step='clean', verbose=True, show=False, **kwargs):
         if(kwargs['mode']=='keep_all_samples'):
             keychain = homogen.reduce_feature_keep_samples(keychain, input_list,
                                                            verbose=verbose, show=show)
-        else:
+        elif(kwargs['mode']=='optimize'):
             keychain, input_list = homogen.reduce_optimized(keychain, input_list,
                                                             verbose=verbose, show=show)
     return keychain, input_list
@@ -173,8 +173,14 @@ def simplify(oldfile, newfile, pdbformat):
     # Create entity_id -> [asym_id] correspondence map.
     # This is needed in order to determine whether or not a chain's molID info
     # should be printed to the file
-    entity_id_list = mmcif_dict['_atom_site.label_entity_id']
-    asym_id_list = mmcif_dict['_atom_site.label_asym_id']
+    if '_atom_site.label_entity_id' in mmcif_dict:
+        entity_id_list = mmcif_dict['_atom_site.label_entity_id']
+    else:
+        entity_id_list = ['1']
+    if '_atom_site.label_asym_id' in mmcif_dict:
+        asym_id_list = mmcif_dict['_atom_site.label_asym_id']
+    else:
+        asym_id_list = ['1']
 
     entity_asym_assembly_map = {}
     for i in range(len(entity_id_list)):
@@ -263,19 +269,22 @@ def simplify(oldfile, newfile, pdbformat):
         L2 = mmcif_dict['_entity.pdbx_description']
         if isinstance(L1, list):  # Have to check list or not because files with only one assembly unit won't be list
             for i in range(len(L1)):
-                for asym in entity_asym_assembly_map[L1[i]]:
-                    if (assembly == asym_assembly_map[asym]): # Only print molIDs pertaining to particular assembly unit
-                        L2[i] = L2[i].upper()
-                        L2[i] = L2[i].replace(":", "")
-                        newciffile.write(L1[i] + " '" + L2[i].replace("'", "") + "'\n")
-                        break  # Because multiple asym per assembly and don't want to print multiple molID lines
+                if L1[i] in entity_asym_assembly_map:
+                    for asym in entity_asym_assembly_map[L1[i]]:
+                        if asym in asym_assembly_map:
+                            if (assembly == asym_assembly_map[asym]): # Only print molIDs pertaining to particular assembly unit
+                                L2[i] = L2[i].upper()
+                                L2[i] = L2[i].replace(":", "")
+                                newciffile.write(L1[i] + " '" + L2[i].replace("'", "") + "'\n")
+                                break  # Because multiple asym per assembly and don't want to print multiple molID lines
         else:
             for asym in entity_asym_assembly_map[L1]:
-                if (asym_assembly_map[asym] == assembly):
-                    L2 = L2.upper()
-                    L2 = L2.replace(":", "")
-                    newciffile.write(L1 + " '" + L2.replace("'", "") + "'\n")
-                    break  # Because multiple asym per assembly and don't want to print multiple molID lines
+                if asym in asym_assembly_map:
+                    if (asym_assembly_map[asym] == assembly):
+                        L2 = L2.upper()
+                        L2 = L2.replace(":", "")
+                        newciffile.write(L1 + " '" + L2.replace("'", "") + "'\n")
+                        break  # Because multiple asym per assembly and don't want to print multiple molID lines
         # Now write the coordinate portion of the file
         newciffile.write("#" + "\n")
         newciffile.write("loop_" + "\n")
@@ -331,14 +340,15 @@ def simplify(oldfile, newfile, pdbformat):
         hetatm_map = {}
         hetatm_count = 0
         for i in range(len(L1)):
-            if (assembly == asym_assembly_map[L7[i]]): # Only print molIDs pertaining to particular assembly unit
-                if (L1[i]=="ATOM"):
-                    newciffile.write(L1[i] + " " + L2[i] + " " + L3[i] + ' "' + L4[i] + '" ' + L5[i] + " " + L6[i] + " " + L7[i] + " " + L8[i] + " " + L9[i] + " " + L10[i] + " " + L11[i] + " " + L12[i] + " " + L13[i] + " " + L14[i] + " " + L15[i] + " " + L16[i] + " " + L17[i] + " " + L18[i] + ' "' + L19[i] + '" ' + L20[i] + "\n")
-                elif (L1[i]=="HETATM"):
-                    if L7[i] in asymatom_list:
-                        newciffile.write("ATOM" + " " + L2[i] + " " + L3[i] + ' "' + L4[i] + '" ' + L5[i] + " " + L6[i] + " " + L7[i] + " " + L8[i] + " " + L9[i] + " " + L10[i] + " " + L11[i] + " " + L12[i] + " " + L13[i] + " " + L14[i] + " " + L15[i] + " " + L16[i] + " " + L17[i] + " " + L18[i] + ' "' + L19[i] + '" ' + L20[i] + "\n")
-                    else:
-                        newciffile.write(L1[i] + " " + L2[i] + " " + L3[i] + ' "' + L4[i] + '" ' + L5[i] + " " + L6[i] + " " + L7[i] + " " + L8[i] + " " + L9[i] + " " + L10[i] + " " + L11[i] + " " + L12[i] + " " + L13[i] + " " + L14[i] + " " + L15[i] + " " + L16[i] + " " + L17[i] + " " + "het" + L6[i] + L18[i] + ' "' + L19[i] + '" ' + L20[i] + "\n")
+            if L7[i] in asym_assembly_map:
+                if (assembly == asym_assembly_map[L7[i]]): # Only print molIDs pertaining to particular assembly unit
+                    if (L1[i]=="ATOM"):
+                        newciffile.write(L1[i] + " " + L2[i] + " " + L3[i] + ' "' + L4[i] + '" ' + L5[i] + " " + L6[i] + " " + L7[i] + " " + L8[i] + " " + L9[i] + " " + L10[i] + " " + L11[i] + " " + L12[i] + " " + L13[i] + " " + L14[i] + " " + L15[i] + " " + L16[i] + " " + L17[i] + " " + L18[i] + ' "' + L19[i] + '" ' + L20[i] + "\n")
+                    elif (L1[i]=="HETATM"):
+                        if L7[i] in asymatom_list:
+                            newciffile.write("ATOM" + " " + L2[i] + " " + L3[i] + ' "' + L4[i] + '" ' + L5[i] + " " + L6[i] + " " + L7[i] + " " + L8[i] + " " + L9[i] + " " + L10[i] + " " + L11[i] + " " + L12[i] + " " + L13[i] + " " + L14[i] + " " + L15[i] + " " + L16[i] + " " + L17[i] + " " + L18[i] + ' "' + L19[i] + '" ' + L20[i] + "\n")
+                        else:
+                            newciffile.write(L1[i] + " " + L2[i] + " " + L3[i] + ' "' + L4[i] + '" ' + L5[i] + " " + L6[i] + " " + L7[i] + " " + L8[i] + " " + L9[i] + " " + L10[i] + " " + L11[i] + " " + L12[i] + " " + L13[i] + " " + L14[i] + " " + L15[i] + " " + L16[i] + " " + L17[i] + " " + "het" + L6[i] + L18[i] + ' "' + L19[i] + '" ' + L20[i] + "\n")
         newciffile.write("#" + "\n")
 #
 def clean(oldfile, newfile):
@@ -355,16 +365,6 @@ def clean(oldfile, newfile):
                   '_em_3d_reconstruction.resolution',
                   '_refine_hist.pdbx_refine_id',
                   '_refine.pdbx_refine_id']
-    #keylength_list = [ 9,
-    #                   20,
-    #                   21,
-    #                   15,
-    #                   37,
-    #                   24,
-    #                   13,
-    #                   32,
-    #                   27,
-    #                   22]
     with open(oldfile) as old_file:
         alllines = []
         linecount = 0
@@ -375,7 +375,6 @@ def clean(oldfile, newfile):
             if linecount == 0:
                 with open(newfile, 'a') as new_file:
                     new_file.write(alllines[0])
-            #for entry, keylength in zip(entry_list, keylength_list):
             for entry in entry_list:
                 flag = check_and_write_entry(entry, line, alllines, line[0:len(entry)], flag, range(poundline, linecount), newfile)
             if '#' in line[0]:

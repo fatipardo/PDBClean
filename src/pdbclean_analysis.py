@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 from matplotlib.ticker import MultipleLocator
-from msmbuilder.decomposition import tICA, PCA
+#from msmbuilder.decomposition import tICA, PCA
 from sklearn.decomposition import FastICA
 from sklearn.preprocessing import normalize
 import scipy
@@ -438,9 +438,11 @@ def get_pca(traj,n_components=1):
     pca.components_ : (n_frame, n_components)
     pca.singular_values_ : (n_components)
     """
-    pca = PCA(n_components=n_components,svd_solver='full')
-    pca.fit([traj])
-    return pca.components_, pca.singular_values_
+    #pca = PCA(n_components=n_components,svd_solver='full')
+    #pca.fit([traj])
+    #return pca.components_, pca.singular_values_
+    U,s,Vh = get_svd(traj)
+    return U[:,0:n_components], s[0:n_components]
 
 def get_ica(traj,n_components=1,fun='logcosh'):
     """ get_ica : Independent Component Analysis
@@ -449,12 +451,12 @@ def get_ica(traj,n_components=1,fun='logcosh'):
     ica.fit(traj)
     return ica.components_
 
-def get_tica(traj,n_components=1,lag_time=100):
-    """ get_tica : time-structured ICA
-    """
-    tica = tICA(n_components,lag_time)
-    tica.fit([traj])
-    return tica.components_, tica.eigenvalues_
+#def get_tica(traj,n_components=1,lag_time=100):
+#    """ get_tica : time-structured ICA
+#    """
+#    tica = tICA(n_components,lag_time)
+#    tica.fit([traj])
+#    return tica.components_, tica.eigenvalues_
 
 def proj(component,xyz):
     """ proj : project data on components, and normalize

@@ -1,4 +1,10 @@
-import sys, os, glob, shutil, datetime
+import sys
+import os
+import glob
+import shutil
+import datetime
+import pickle
+import numpy as np
 #
 
 def check_project(projdir=None, level='top', action='create', verbose=True):
@@ -72,11 +78,7 @@ def create_dir(dirpath, verbose=True):
     """
     if not os.path.exists(dirpath):
         os.mkdir(dirpath)
-        if verbose:
-            now=datetime.datetime.now()
-            f = open(dirpath+'/info.txt', 'w')
-            f.write('directory created on {0}'.format(now))
-            f.close()
+        log(logdir=dirpath, action='create')
     else:
         if verbose:
             print('{0} already exists, with content:'.format(dirpath))
@@ -99,6 +101,54 @@ def delete_dir(dirpath, verbose=True):
         shutil.rmtree(dirpath)
         if verbose:
             print('Deleting {0}...'.format(dirpath))
+
+def log(logdir='.', action='create', field=None, fieldname=None):
+    """
+    :param logdir:
+    :param action:
+    :param field:
+    :return:
+    """
+    logfile=logdir+'/log.pkl'
+    if(action=='create'):
+        now = datetime.datetime.now()
+        dictionary = {}
+        dictionary['directory_location'] = logdir
+        dictionary['time_created'] = now
+        with open(logfile, 'wb') as fp:
+            pickle.dump(dictionary, fp)
+    elif(action=='add'):
+        if field is None or fieldname is None:
+            print('LOG WARNING: please provide a field and fieldname to add to the dictionary')
+        else:
+            with open(logfile, 'rb') as fp:
+                dictionary = pickle.load(fp)
+            dictionary[fieldname] = field
+            with open(logfile, 'wb') as fp:
+                pickle.dump(dictionary, fp)
+    elif(action=='inspect'):
+        print('The following fields have been filled in {0}: '.format(logfile))
+        with open(logfile, 'rb') as fp:
+            dictionary = pickle.load(fp)
+        print(dictionary.keys())
+
+def load_field_from_dictionary(logdir='.', fieldname=None):
+    """
+    :param logdir:
+    :param fieldname:
+    :return:
+    """
+    logfile = logdir + '/log.pkl'
+    if fieldname is None:
+        print('WARNING: please provide a field name to load from {0}'.format(logfile))
+    else:
+        with open(logfile, 'rb') as fp:
+            dictionary = pickle.load(fp)
+        field = dictionary[fieldname]
+        stripped_field = np.copy(field)
+        for i in np.arange(field.shape[0]):
+            stripped_field[i] = field[i].strip('\n')
+        return stripped_field
 
 ##########################
 # COLABORATORY INTERFACE #

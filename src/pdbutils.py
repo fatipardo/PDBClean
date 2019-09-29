@@ -1,6 +1,8 @@
 #
 import os
 import shutil
+import datetime
+import pickle
 import re
 import numpy as np
 from urllib.request import urlopen
@@ -30,7 +32,10 @@ def download_pdb_from_id(pdbid, pdbformat='.cif', download_dir=None):
     else:
         target = download_dir+'/'+pdbid+pdbformat
         source = download_url+pdbid.upper()+pdbformat
-        download_from_url(source, target)
+        if os.path.isfile(target):
+            print('found {0} here already... '.format(target))
+        else:
+            download_from_url(source, target)
 
 def get_idset_from_metadata(metadata):
     """
