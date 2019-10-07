@@ -26,45 +26,72 @@ def process_inputlist(input_list, target_dir, pdbformat='.cif',
     """
     #print(kwargs)
     # - initialize if needed
-    keychain, input_list = init_process(input_list, step=step, 
-                                        verbose=verbose, show=show, **kwargs )
+    keychain, input_list, assignment = init_process(input_list, target_dir=target_dir, step=step, 
+                                                    verbose=verbose, show=show, **kwargs )
     # - iteratively process each file in the list
     i=0
     for input_file in input_list:
-        output_file  = pcio.new_filepath(input_file, target_dir)
+        subdir='.'
+        if(step=='homogenize'):
+            if(kwargs['mode']=='cluster_out'):
+                subdir='cluster'+str(assignment[i])
+        output_file = pcio.new_filepath(input_file, target_dir, subdir=subdir)
         if verbose:
-            i+=1
-            print('[{0}/{1}]: {2}'.format(i,len(input_list), output_file))
+            print('[{0}/{1}]: {2}'.format(i+1,len(input_list), output_file))
         if(step=='clean'):
             clean(input_file, output_file)
         elif(step=='simplify'):
             simplify(input_file, output_file, pdbformat)
         elif(step=='fixhet'):
-            fixhet(input_file, output_file)
+            fixatom(input_file, output_file, atom="HETATM")
+        elif(step=='fixatm'):
+            fixatom(input_file, output_file, atom="ATOM")
         elif(step=='finalize'):
             finalize(input_file, output_file)
         elif(step=='homogenize'):
             reduce_to_keychain(input_file, output_file, keychain)
         elif(step=='select'):
             reduce_to_keychain(input_file, output_file, keychain)
+        i+=1
 
 ####
 
-def init_process(input_list, step='clean', verbose=True, show=False, **kwargs):
+def init_process(input_list, target_dir=None, step='clean', verbose=True, show=False, **kwargs):
     """
     init_process
     """
     keychain=[]
-    if(step=='select' or step=='homogenize'):
+    assignment=[]
+    if(step=='select'):
         keychain = cif.pdbs_to_keychain(input_list, verbose=verbose, **kwargs)
-    if(step=='homogenize'):
+    elif(step=='homogenize'):
+        if(kwargs['mode']=='cluster_out'):
+            keychain = np.load(target_dir+'/keychain.npy')
+        else:
+            keychain = cif.pdbs_to_keychain(input_list, verbose=verbose, **kwargs)
         if(kwargs['mode']=='keep_all_samples'):
             keychain = homogen.reduce_feature_keep_samples(keychain, input_list,
                                                            verbose=verbose, show=show)
         elif(kwargs['mode']=='optimize'):
             keychain, input_list = homogen.reduce_optimized(keychain, input_list,
                                                             verbose=verbose, show=show)
-    return keychain, input_list
+        elif(kwargs['mode']=='see_cluster_hierarchy'):
+            homogen.cluster(keychain, input_list, path=target_dir,
+                            verbose=verbose, show=show)
+            np.save(target_dir+'/keychain.npy', keychain)
+            input_list = ()
+        elif(kwargs['mode']=='cluster_out'):
+            n_clusters=-1
+            if 'n_clusters' in kwargs:
+                n_clusters=kwargs['n_clusters']
+            cutoff=-1
+            if 'cutoff' in kwargs:
+                cutoff=kwargs['cutoff']
+            assignment = homogen.assign_clusters(keychain, input_list, 
+                                                 n_clusters=n_clusters, cutoff=cutoff,
+                                                 path=target_dir, 
+                                                 verbose=verbose, show=show)
+    return keychain, input_list, assignment
 
 def reduce_to_keychain(input_file, output_file, keychain):
     """
@@ -88,9 +115,9 @@ def finalize(oldfile, newfile):
             else:
                 newciffile.write(line)
 #
-def fixhet(oldfile, newfile):
+def fixatom(oldfile, newfile, atom="HETATM"):
     """
-    fixhet
+    fixatom
     """
     with open(oldfile) as myfile:
         hetch_count_map = {}
@@ -102,7 +129,7 @@ def fixhet(oldfile, newfile):
             line_split = line.strip()
             line_split = line_split.split()
             # Can Update so that it looks at all atoms?
-            if (line_split[0] == "HETATM"):
+            if (line_split[0] == atom):
                 key = str(line_split[15]) + "_" + str(line_split[16]) + "_" + str(line_split[17]) + "_" + str(line_split[18])
                 if line_split[17] in hetch_count_map:
                     if (line_split[15] != last_res[line_split[17]]) or (key in usage):

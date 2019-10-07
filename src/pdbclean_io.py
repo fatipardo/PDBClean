@@ -28,11 +28,11 @@ def check_project(projdir=None, level='top', action='create', verbose=True):
 # FILE HANDLING #
 #################
 
-def new_filepath(input_file, output_dir, force_new=True):
+def new_filepath(input_file, output_dir, subdir='.', force_new=True):
     """
     """
     filename = os.path.basename(input_file)
-    output_file = output_dir+'/'+filename
+    output_file = output_dir+'/'+subdir+'/'+filename
     if force_new:
         if os.path.exists(output_file):
             os.remove(output_file)

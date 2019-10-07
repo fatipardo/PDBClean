@@ -1,11 +1,16 @@
 import numpy as np
 import numpy.ma as ma
+from matplotlib import pyplot as plt
+import scipy
+import scipy.spatial
+import scipy.cluster
+import pickle
 from Bio.PDB.MMCIF2Dict import MMCIF2Dict
+from PDBClean import pdbclean_io as pcio
 from PDBClean import pdbclean_cifutils as cifutils
 from PDBClean import pdbclean_viz as viz
-import cvxopt
-from cvxopt import glpk
-from cvxopt import matrix
+from PDBClean import biputils as bip
+from PDBClean import svdutils as svd
 
 def reduce_feature_keep_samples(feature, sample, verbose=False, show=False):
     """
@@ -16,8 +21,8 @@ def reduce_feature_keep_samples(feature, sample, verbose=False, show=False):
     feature_score   = np.sum(map, axis=1)
     feature_mask    = np.where(feature_score < map.shape[1], True, False)
     feature_reduced = ma.masked_array(feature, mask=feature_mask).compressed()
-    map = cifutils.keychain_to_atommap(feature_reduced, sample, verbose=verbose)
     if show:
+        map = cifutils.keychain_to_atommap(feature_reduced, sample, verbose=verbose)
         viz.show_atommap(map)
     return feature_reduced
 
@@ -27,7 +32,7 @@ def reduce_optimized(feature, sample, verbose=False, show=False):
     map = cifutils.keychain_to_atommap(feature, sample, verbose=verbose)
     if show:
         viz.show_atommap(map)
-    status, feature_index, sample_index, map_new = bip_ilp(map)
+    status, feature_index, sample_index, map_new = bip.bip_ilp(map)
     if verbose:
         print('Solution is {0}. Score went from {1} to {2}. We keep {3} / {4} samples and {5} / {6} features.'.format(status, 
                                                                          np.sum(map), 
@@ -47,142 +52,109 @@ def reduce_optimized(feature, sample, verbose=False, show=False):
         viz.show_atommap(map_reduced)
     return feature_reduced, sample_reduced.tolist()
 
-def bip_ilp(A):
+def assign_clusters(keychain, input_list, n_clusters=-1, cutoff=-1, path=None, verbose=False, show=False):
     """
+    assign_clusters
     """
-    print('Setting up and solving Binary linear program.')
-    m,n = A.shape
-    G1 = build_G(A, constraint=1)
-    G2 = build_G(A, constraint=2)
-    G3 = build_G(A, constraint=3)
-    G4 = build_G(A, constraint=4)
-    h1 = build_h(A, constraint=1)
-    h2 = build_h(A, constraint=2)
-    h3 = build_h(A, constraint=3)
-    h4 = build_h(A, constraint=4)
-    M = assemble_G(A,G1,G2,G3,G4)
-    b = assemble_h(A,h1,h2,h3,h4)
-    w = assemble_w(A)
-    c, G, h = matrix(w), matrix(M.T), matrix(b)
-    status, sol = glpk.ilp(c, G.T, h, B=set(range(len(c))))
-    solution = np.array(sol).astype('int')
-    solution_row = solution[0:m]
-    solution_col = solution[m:m+n]
-    solution_mat = solution[m+n:].reshape((m,n))
-    return status, 1-solution_row, 1-solution_col, 1-solution_mat
+    if path is None:
+        print("Warning! provide path...")
+    #
+    file_clusters = open(path+'/clusters.pkl', 'rb')
+    clusters = pickle.load(file_clusters)
+    if(n_clusters<=0):
+        if(cutoff<=0):
+            file_cutoff = open(path+'/cutoff.pkl', 'rb')
+            cutoff = pickle.load(file_cutoff)['cutoff']
+        n_clusters = get_nclusters(clusters, cutoff)
+    assignment = get_assignment(clusters, n_clusters)
+    figname=path+'/assignment_stats.png'
+    if verbose:
+        print('... writing {}'.format(figname))
+    unique, counts = plot_assignment_stats(assignment, figname=figname)
+    for i in unique:
+        pcio.check_project(projdir=path, level='cluster'+str(i), action='create', verbose=True)
+    return assignment
 
-##################### 
-# BIP ILP UTILITIES #
-#####################
+def cluster(feature, sample, path=None, verbose=False, show=False):
+    """
+    cluster
+    """
+    if path is None:
+        path='.'
+    #
+    map = cifutils.keychain_to_atommap(feature, sample, verbose=verbose)
+    if show:
+        viz.show_atommap(map)
+    map_denoised = svd.denoise(map)
+    #
+    distance = scipy.spatial.distance.pdist(map.T)
+    cutoff_dict = {"cutoff": np.amax(scipy.spatial.distance.squareform(distance))}
+    file_cutoff = open(path+'/cutoff.pkl', 'wb')
+    if verbose:
+        print('... writing {}'.format(file_cutoff))
+    pickle.dump(cutoff_dict, file_cutoff)
+    file_cutoff.close()
+    #
+    clusters = scipy.cluster.hierarchy.linkage(distance, method='ward')
+    #
+    figname=path+'/dendogram.png'
+    if verbose:
+        print('... writing {}'.format(figname))
+    plot_clusters(clusters, figname=figname)
+    #
+    file_clusters = open(path+'/clusters.pkl', 'wb')
+    if verbose:
+        print('... writing {}'.format(file_clusters))
+    pickle.dump(clusters, file_clusters)
+    file_clusters.close()
 
-def assemble_w(A, mode='e'):
+def get_nclusters(clusters,cutoff):
+    """ get_nclusters
     """
-    """
-    m, n = A.shape
-    if(mode=='all'):
-        wr = 1
-        wc = 1
-        we = 1
-    else:
-        wr = 0
-        if(mode=='r'):
-            wr=1
-        wc = 0
-        if(mode=='c'):
-            wc=1
-        we = 0
-        if(mode=='e'):
-            we=1
-    w = np.empty(n+m+n*m)
-    w[0:m]   = wr
-    w[m:m+n] = wc
-    w[n+m:n+m+n*m] = we
-    print('w.shape = {0}'.format(w.shape))
-    return w.astype('double')
+    n_clusters=1
+    keepongoing=True
+    n = clusters.shape[0]
+    for i in np.arange(1,n): #np.arange(0,n):
+        score = clusters[i,2] - clusters[i-1,2]
+        if(score > cutoff and keepongoing):
+            n_clusters = n-i + 1
+            print("Number of domains: ",n_clusters," (",score,")")
+            keepongoing=False
+    return n_clusters
 
-def assemble_h(A,h1,h2,h3,h4):
-    """
-    """
-    m, n = A.shape
-    nrows = m*n
-    h = np.empty(4*nrows)
-    h[0:nrows]         = h1
-    h[nrows:2*nrows]   = h2
-    h[2*nrows:3*nrows] = h3
-    h[3*nrows:4*nrows] = h4
-    print('h.shape = {0}'.format(h.shape))
-    return -h.astype('double')
+def get_assignment(l,n_clusters):
+    return scipy.cluster.hierarchy.fcluster(l, t=n_clusters, criterion='maxclust')
 
-def assemble_G(A,G1,G2,G3,G4):
-    """
-    """
-    m, n = A.shape
-    nrows = m*n
-    ncols = m + n + m*n
-    G = np.empty((4*nrows,ncols))
-    G[0:nrows,:]         = G1
-    G[nrows:2*nrows,:]   = G2
-    G[2*nrows:3*nrows,:] = G3
-    G[3*nrows:4*nrows,:] = G4
-    print('G.shape = {0}'.format(G.shape))
-    return -G.astype('double')
+def plot_clusters(clusters,figsize=12,figname=''):
+    fig = plt.figure(figsize=(figsize, figsize), dpi= 160, facecolor='w', edgecolor='k')
+    nrow=2
+    ncol=1
+    # look at the number of natural clusters using the linkage object
+    variance = clusters[:,2][::-1]
+    plt.subplot(nrow,ncol,1)
+    plt.scatter(np.arange(variance.shape[0]), variance)
+    plt.title('Objective function change', fontsize=15)
+    plt.ylabel('Variance', fontsize=13)
+    plt.xlabel('Number of macrostates', fontsize=13)
+    # see dendogram
+    plt.subplot(nrow,ncol,2)
+    scipy.cluster.hierarchy.dendrogram(clusters)
+    plt.xticks(fontsize=13)
+    plt.title('Ward linkage', fontsize=15)
+    #
+    plt.tight_layout()
+    plt.show()
+    if(figname):
+        fig.savefig(figname)
 
-def build_h(A, constraint=1): #n_sample=5, n_feature=20):
+def plot_assignment_stats(assignment, figsize=4, figname=''):
     """
     """
-    m, n = A.shape
-    nrows = m*n
-    if(constraint==1):
-        h = np.invert(A.reshape(nrows).astype('bool')).astype('int')
-    else:
-        h = np.zeros(nrows)
-    #print('h.shape = {0}'.format(h.shape))
-    return h
-
-def build_G(A, constraint=1):
-    """
-    """
-    m, n = A.shape
-    nrows = m*n
-    ncols = m + n + m*n
-    Gr = build_Gr(m,n,constraint=constraint)
-    Gc = build_Gc(m,n,constraint=constraint)
-    Ge = build_Ge(m,n,constraint=constraint)
-    G  = np.zeros((nrows,ncols))
-    G[:,0:m]   = Gr
-    G[:,m:m+n] = Gc
-    G[:,m+n:]  = Ge
-    #print('G.shape = {0}'.format(G.shape))
-    return G
-
-def build_Gr(m,n,constraint=1):
-    nrows = m*n
-    Gr = np.zeros((nrows,m))
-    if(constraint==2):
-        for i in np.arange(m):
-            Gr[i*n:(i+1)*n,i] = 1
-    elif(constraint==3):
-        for i in np.arange(m):
-            Gr[i*n:(i+1)*n,i] = -1
-    #print('... Gr built')
-    return Gr
-        
-def build_Gc(m,n,constraint=1):
-    nrows = m*n
-    Gc = np.zeros((nrows,n))
-    if(constraint==2):
-        for i in np.arange(m): 
-            Gc[i*n:(i+1)*n,:] = np.identity(n)
-    elif(constraint==4):
-        for i in np.arange(m):
-            Gc[i*n:(i+1)*n,:] = -np.identity(n)
-    #print('... Gc built')
-    return Gc
-
-def build_Ge(m,n,constraint=1):
-    nrows = m*n
-    Ge = np.identity(nrows)
-    if(constraint==2):
-        Ge = -Ge
-    #print('... Ge built')
-    return Ge
+    unique, counts = np.unique(assignment, return_counts=True)
+    fig = plt.figure(figsize=(figsize, figsize), dpi= 160, facecolor='w', edgecolor='k')
+    plt.title('fraction of total population in cluster (N={0})'.format(assignment.shape[0]))
+    plt.plot(unique, counts/assignment.shape[0], 'o')
+    plt.show()
+    if(figname):
+        fig.savefig(figname)
+    return unique, counts
