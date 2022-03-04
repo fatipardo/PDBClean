@@ -1,4 +1,4 @@
-# PDBClean
+# PDBClean F.V.
 PDBClean offers curation tools for structural ensemble deposited in the Protein Data Bank.
 
 *For installation instructions, please see [below](#installation).*
@@ -71,5 +71,3 @@ Assuming you have the required tools and libraries listed below, just type:
 #### Requirements
 - [muscle](http://www.drive5.com/muscle/downloads.htm)
 - [biopython](https://biopython.org/wiki/Download)
-
-
